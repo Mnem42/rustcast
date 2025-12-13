@@ -56,7 +56,7 @@ fn handle_from_icns(path: &Path) -> Option<Handle> {
 
     let icon_type = family.available_icons();
 
-    let icon = family.get_icon_with_type(*icon_type.get(0)?).ok()?;
+    let icon = family.get_icon_with_type(*icon_type.first()?).ok()?;
     let image = RgbaImage::from_raw(
         icon.width() as u32,
         icon.height() as u32,
@@ -101,31 +101,72 @@ pub fn get_installed_apps(dir: impl AsRef<Path>) -> Vec<App> {
                 exit(-1)
             });
 
-            let direntry = fs::read_dir(format!("{}/Contents/Resources", path_str))
-                .into_iter()
-                .flatten()
-                .filter_map(|x| {
-                    let file = x.ok()?;
-                    let name = file.file_name();
-                    let file_name = name.to_str()?;
-                    if file_name.ends_with(".icns") {
-                        Some(file.path())
+            let icons = match fs::read_to_string(format!("{}/Contents/Info.plist", path_str)).map(
+                |content| {
+                    let icon_line = content
+                        .lines()
+                        .scan(false, |expect_next, line| {
+                            if *expect_next {
+                                *expect_next = false;
+                                // Return this line to the iterator
+                                return Some(Some(line));
+                            }
+
+                            if line.trim() == "<key>CFBundleIconFile</key>" {
+                                *expect_next = true;
+                            }
+
+                            // For lines that are not the one after the key, return None to skip
+                            Some(None)
+                        })
+                        .flatten() // remove the Nones
+                        .next()
+                        .map(|x| {
+                            x.trim()
+                                .strip_prefix("<string>")
+                                .unwrap_or("")
+                                .strip_suffix("</string>")
+                                .unwrap_or("")
+                        });
+                    dbg!(icon_line);
+
+                    handle_from_icns(Path::new(&format!(
+                        "{}/Contents/Resources/{}",
+                        path_str,
+                        icon_line.unwrap_or("AppIcon.icns")
+                    )))
+                },
+            ) {
+                Ok(Some(a)) => Some(a),
+                _ => {
+                    // Fallback method
+                    let direntry = fs::read_dir(format!("{}/Contents/Resources", path_str))
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|x| {
+                            let file = x.ok()?;
+                            let name = file.file_name();
+                            let file_name = name.to_str()?;
+                            if file_name.ends_with(".icns") {
+                                Some(file.path())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<PathBuf>>();
+                    let icons = if direntry.len() > 1 {
+                        let icns_vec = direntry
+                            .iter()
+                            .filter(|x| x.ends_with("AppIcon.icns"))
+                            .collect::<Vec<&PathBuf>>();
+                        handle_from_icns(icns_vec.first().unwrap_or(&&PathBuf::new()))
+                    } else if !direntry.is_empty() {
+                        handle_from_icns(direntry.first().unwrap_or(&PathBuf::new()))
                     } else {
                         None
-                    }
-                })
-                .collect::<Vec<PathBuf>>();
-
-            let icons = if direntry.len() > 1 {
-                let icns_vec = direntry
-                    .iter()
-                    .filter(|x| x.ends_with("AppIcon.icns"))
-                    .collect::<Vec<&PathBuf>>();
-                handle_from_icns(icns_vec.first().unwrap_or(&&PathBuf::new()))
-            } else if direntry.len() > 0 {
-                handle_from_icns(direntry.first().unwrap_or(&PathBuf::new()))
-            } else {
-                None
+                    };
+                    icons
+                }
             };
 
             let name = file_name.strip_suffix(".app").unwrap().to_string();
@@ -165,28 +206,36 @@ impl App {
                 .align_y(Alignment::Center);
         }
 
-        tile = tile.push(
-            Button::new(
-                Text::new(self.name.clone())
-                    .height(Fill)
-                    .width(Fill)
-                    .align_y(Vertical::Center),
+        tile = tile
+            .push(
+                Button::new(
+                    Text::new(self.name.clone())
+                        .height(Fill)
+                        .width(Fill)
+                        .align_y(Vertical::Center),
+                )
+                .on_press(Message::RunShellCommand(self.open_command.clone()))
+                .style(|_, _| iced::widget::button::Style {
+                    background: Some(iced::Background::Color(
+                        Theme::KanagawaDragon.palette().background,
+                    )),
+                    text_color: Theme::KanagawaDragon.palette().text,
+                    ..Default::default()
+                })
+                .width(Fill)
+                .height(55),
             )
-            .on_press(Message::RunShellCommand(self.open_command.clone()))
-            .style(|_, _| iced::widget::button::Style {
+            .width(Fill);
+        container(tile)
+            .style(|_| iced::widget::container::Style {
+                text_color: Some(Theme::KanagawaDragon.palette().text),
                 background: Some(iced::Background::Color(
                     Theme::KanagawaDragon.palette().background,
                 )),
-                text_color: Theme::KanagawaDragon.palette().text,
                 ..Default::default()
             })
-            .width(Fill).height(55)
-        ).width(Fill);
-        container(tile).style(|_| iced::widget::container::Style {
-            text_color: Some(Theme::KanagawaDragon.palette().text),
-            background: Some(iced::Background::Color(Theme::KanagawaDragon.palette().background)),
-            ..Default::default()
-        }).width(Fill).height(Fill)
+            .width(Fill)
+            .height(Fill)
     }
 }
 
@@ -199,6 +248,7 @@ pub enum Message {
     RunShellCommand(String),
     ClearSearchResults,
     WindowFocusChanged(Id, bool),
+    ClearSearchQuery,
     _Nothing,
 }
 
@@ -249,7 +299,6 @@ pub struct Tile {
 impl Tile {
     /// A base window
     pub fn new() -> (Self, Task<Message>) {
-        //        let _ = create_tray_icons();
         let (id, open) = window::open(default_settings());
         let _ = window::run(id, |handle| {
             macos::macos_window_config(
@@ -355,6 +404,12 @@ impl Tile {
                 }
             }
 
+            Message::ClearSearchQuery => {
+                self.query_lc = String::new();
+                self.query = String::new();
+                Task::none()
+            }
+
             Message::KeyPressed(hk_id) => match Hotkeys::from_u32_hotkey_id(hk_id) {
                 Hotkeys::AltSpace => {
                     self.visible = !self.visible;
@@ -379,6 +434,7 @@ impl Tile {
                 window::latest()
                     .map(|x| x.unwrap())
                     .map(Message::HideWindow)
+                    .chain(Task::done(Message::ClearSearchQuery))
             }
 
             Message::HideWindow(a) => {
@@ -425,7 +481,7 @@ impl Tile {
 
             let mut search_results = Column::new();
             for result in &self.results {
-                search_results = search_results.push((result).render());
+                search_results = search_results.push(result.render());
             }
 
             Column::new()
