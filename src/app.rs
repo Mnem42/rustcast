@@ -151,9 +151,15 @@ impl Tile {
             .show_icons
             .unwrap();
 
+        let home = std::env::var("HOME").unwrap();
+
         let mut apps = get_installed_apps("/Applications/", store_icons);
         apps.append(&mut get_installed_apps(
             "/System/Applications/",
+            store_icons,
+        ));
+        apps.append(&mut get_installed_apps(
+            home + "/Applications/",
             store_icons,
         ));
         apps.append(&mut get_installed_apps(
