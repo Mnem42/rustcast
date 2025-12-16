@@ -61,7 +61,8 @@ bit wonky, and will be fixed in the upcoming releases
 - [ ] Plugin Support 31/12/2025 (Partially implemented on 15/12/2025)
 - [ ] Blur / transparent background (Partially implemented on 13/12/2025)
 - [ ] Hyperkey - Map CMD + OPT + CTRL + SHIFT to a physical key
-- [ ] Ability to pick between tabs in firefox / chromium browsers - using [Puppeteer](https://pptr.dev/)
+- [ ] Ability to pick between tabs in firefox / chromium browsers - using
+      [Puppeteer](https://pptr.dev/)
 - [ ] Cross platform support - (1/2/2026)
 
 ### Finished:
