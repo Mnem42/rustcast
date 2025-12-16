@@ -2,9 +2,9 @@ name: Merge Checks
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   rust-checks:
