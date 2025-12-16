@@ -28,6 +28,12 @@ use spotlight :) Have fun!)
 3. Open it, and if there is a "this app is damaged", run the command
    `xattr -cr <RustCast.app directory here>`
 
+### Build it youself:
+1. Clone the repo with `git clone https://gitub.com/unsecretised/rustcast.git`
+1. Install `cargo bundle` with `cargo install cargo-bundle` (Requires cargo to be installed)
+1. Run `cargo bundle --release` to build RustCast for your system (The App Dir will be available at: `target/release/bundle/osx/RustCast.app`)
+1. Move the `RustCast.app` directory to your `/Applications/` folder, and launch RustCast
+
 ## Config:
 
 > I have a high chance of gorfetting (forgetting) to update the config docs, but
