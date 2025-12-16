@@ -17,11 +17,14 @@ fn main() -> iced::Result {
         macos::set_activation_policy_accessory();
     }
 
-    let file_path = std::env::var("HOME").unwrap() + "/.config/rustcast/config.toml";
+    let home = std::env::var("HOME").unwrap();
+
+    let file_path = home.clone() + "/.config/rustcast/config.toml";
     let config: Config = match std::fs::read_to_string(&file_path) {
         Ok(a) => toml::from_str(&a).unwrap(),
         Err(_) => Config::default(),
     };
+    std::fs::create_dir_all(home + "/.config/rustcast").unwrap();
     std::fs::write(
         &file_path,
         toml::to_string(&config).unwrap_or_else(|x| x.to_string()),
