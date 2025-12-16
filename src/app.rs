@@ -3,6 +3,7 @@ use crate::config::Config;
 use crate::macos::{focus_this_app, transform_process_to_ui_element};
 use crate::{macos, utils::get_installed_apps};
 
+use arboard::Clipboard;
 use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 use iced::futures::SinkExt;
 use iced::{
@@ -25,9 +26,9 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rayon::slice::ParallelSliceMut;
 
 use std::cmp::min;
+use std::fs;
 use std::process::Command;
 use std::time::Duration;
-use std::fs;
 
 pub const WINDOW_WIDTH: f32 = 500.;
 pub const DEFAULT_WINDOW_HEIGHT: f32 = 65.;
@@ -210,13 +211,20 @@ impl Tile {
                         },
                     );
                 } else if self.query_lc == "randomvar" {
+                    let rand_num = rand::random_range(0..100);
                     self.results = vec![App {
-                        open_command: Function::RunShellCommand(vec!["".to_string()]),
+                        open_command: Function::RandomVar(rand_num),
                         icons: None,
-                        name: rand::random_range(0..100).to_string(),
+                        name: rand_num.to_string(),
                         name_lc: String::new(),
                     }];
-                    return Task::none();
+                    return window::resize(
+                        id,
+                        iced::Size {
+                            width: WINDOW_WIDTH,
+                            height: 55. + DEFAULT_WINDOW_HEIGHT,
+                        },
+                    );
                 }
 
                 self.handle_search_query_changed();
@@ -294,6 +302,9 @@ impl Tile {
                             .arg(shell_command.join(" "))
                             .status()
                             .ok();
+                    }
+                    Function::RandomVar(var) => {
+                        Clipboard::new().unwrap().set_text(&var.to_string()).unwrap_or(());
                     }
                 }
 
