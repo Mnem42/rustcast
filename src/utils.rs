@@ -3,6 +3,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     process::exit,
+    time::SystemTime,
 };
 
 use global_hotkey::hotkey::Code;
@@ -286,4 +287,11 @@ pub fn to_key_code(key_str: &str) -> Option<Code> {
 
         _ => None,
     }
+}
+
+pub fn get_time_since_epoch() -> i64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as i64
 }

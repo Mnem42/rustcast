@@ -1,10 +1,10 @@
 use std::process::Command;
 
-use arboard::Clipboard;
+use arboard::{Clipboard, ImageData};
 use objc2_app_kit::NSWorkspace;
 use objc2_foundation::NSURL;
 
-use crate::config::Config;
+use crate::{config::Config, utils::get_time_since_epoch};
 
 #[derive(Debug, Clone)]
 pub enum Function {
@@ -60,6 +60,42 @@ impl Function {
                     .ok();
             }
             Function::Quit => std::process::exit(0),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ClipboardContent {
+    pub content_type: ClipBoardContentType,
+    pub copied_since_epoch: i64,
+}
+
+#[derive(Debug, Clone)]
+pub enum ClipBoardContentType {
+    Text(String),
+    Image(ImageData<'static>),
+}
+
+impl PartialEq for ClipBoardContentType {
+    fn eq(&self, other: &Self) -> bool {
+        if let Self::Text(a) = self
+            && let Self::Text(b) = other
+        {
+            return a == b;
+        } else if let Self::Image(image_data) = self
+            && let Self::Image(other_image_data) = other
+        {
+            return image_data.bytes == other_image_data.bytes;
+        }
+        false
+    }
+}
+
+impl ClipboardContent {
+    pub fn from_content_type(content_type: ClipBoardContentType) -> ClipboardContent {
+        Self {
+            content_type,
+            copied_since_epoch: get_time_since_epoch(),
         }
     }
 }

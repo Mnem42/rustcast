@@ -1,8 +1,9 @@
-use crate::commands::Function;
+use crate::commands::{ClipBoardContentType, ClipboardContent, Function};
 use crate::config::Config;
 use crate::macos::{focus_this_app, transform_process_to_ui_element};
 use crate::{macos, utils::get_installed_apps};
 
+use arboard::{Clipboard, ImageData};
 use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 use iced::futures::SinkExt;
 use iced::{
@@ -116,6 +117,8 @@ pub enum Message {
     WindowFocusChanged(Id, bool),
     ClearSearchQuery,
     ReloadConfig,
+    ClipboardHistory(ClipBoardContentType),
+    ShowClipboardHistory,
     _Nothing,
 }
 
@@ -148,6 +151,7 @@ pub struct Tile {
     frontmost: Option<Retained<NSRunningApplication>>,
     config: Config,
     open_hotkey_id: u32,
+    clipboard_content: Vec<ClipboardContent>,
 }
 
 impl Tile {
@@ -197,6 +201,7 @@ impl Tile {
                 config: config.clone(),
                 theme: config.theme.to_owned().to_iced_theme(),
                 open_hotkey_id: keybind_id,
+                clipboard_content: vec![],
             },
             Task::batch([open.map(|_| Message::OpenWindow)]),
         )
@@ -347,6 +352,16 @@ impl Tile {
                 }
             }
 
+            Message::ClipboardHistory(clip_content) => {
+                self.clipboard_content
+                    .push(ClipboardContent::from_content_type(clip_content));
+                Task::none()
+            }
+
+            Message::ShowClipboardHistory => {
+                Task::none()
+            },
+
             Message::_Nothing => Task::none(),
         }
     }
@@ -391,6 +406,7 @@ impl Tile {
         Subscription::batch([
             Subscription::run(handle_hotkeys),
             Subscription::run(handle_hot_reloading),
+            Subscription::run(handle_clipboard_history),
             window::close_events().map(Message::HideWindow),
             keyboard::listen().filter_map(|event| {
                 if let keyboard::Event::KeyPressed { key, .. } = event {
@@ -489,6 +505,34 @@ fn handle_hotkeys() -> impl futures::Stream<Item = Message> {
                 && event.state == HotKeyState::Pressed
             {
                 output.try_send(Message::KeyPressed(event.id)).unwrap();
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+}
+
+fn handle_clipboard_history() -> impl futures::Stream<Item = Message> {
+    stream::channel(100, async |mut output| {
+        let mut clipboard = Clipboard::new().unwrap();
+        let mut prev_byte_rep: Option<ClipBoardContentType> = None;
+
+        loop {
+            let byte_rep = if let Ok(a) = clipboard.get_image() {
+                Some(ClipBoardContentType::Image(a))
+            } else if let Ok(a) = clipboard.get_text() {
+                Some(ClipBoardContentType::Text(a))
+            } else {
+                None
+            };
+
+            if byte_rep != prev_byte_rep
+                && let Some(content) = &byte_rep
+            {
+                output
+                    .send(Message::ClipboardHistory(content.to_owned()))
+                    .await
+                    .ok();
+                prev_byte_rep = byte_rep;
             }
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
