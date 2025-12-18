@@ -6,7 +6,7 @@ mod macos;
 mod utils;
 
 // import from utils
-use crate::utils::{create_config_file, get_config_file_path, read_config_file};
+use crate::utils::{create_config_file_if_not_exists, get_config_file_path, read_config_file};
 
 use crate::{app::Tile, utils::to_key_code};
 
@@ -23,7 +23,7 @@ fn main() -> iced::Result {
 
     let file_path = get_config_file_path();
     let config = read_config_file(&file_path).unwrap();
-    create_config_file(&file_path, &config).unwrap();
+    create_config_file_if_not_exists(&file_path, &config).unwrap();
 
     let manager = GlobalHotKeyManager::new().unwrap();
 

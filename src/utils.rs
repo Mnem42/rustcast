@@ -319,7 +319,14 @@ pub fn read_config_file(file_path: &str) -> Result<Config, std::io::Error> {
     Ok(config)
 }
 
-pub fn create_config_file(file_path: &str, config: &Config) -> Result<(), std::io::Error> {
+pub fn create_config_file_if_not_exists(
+    file_path: &str,
+    config: &Config,
+) -> Result<(), std::io::Error> {
+    if std::path::Path::new(&get_config_file_path()).exists() {
+        return Ok(());
+    }
+
     #[cfg(target_os = "windows")]
     {
         use std::path::Path;
