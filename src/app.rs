@@ -1,8 +1,6 @@
 use crate::commands::Function;
 use crate::config::Config;
-use crate::macos::{focus_this_app, transform_process_to_ui_element};
-use crate::{macos, utils::get_installed_apps};
-
+use crate::utils::get_config_file_path;
 use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 use iced::futures::SinkExt;
 use iced::{
@@ -17,9 +15,22 @@ use iced::{
     },
     window::{self, Id, Settings},
 };
+use std::path::Path;
 
+#[cfg(target_os = "macos")]
+use crate::macos::{focus_this_app, transform_process_to_ui_element};
+#[cfg(target_os = "macos")]
+use crate::{macos, utils::get_installed_apps};
+#[cfg(target_os = "macos")]
 use objc2::rc::Retained;
+#[cfg(target_os = "macos")]
 use objc2_app_kit::NSRunningApplication;
+
+#[cfg(target_os = "windows")]
+use windows::Win32::Foundation::HWND;
+#[cfg(target_os = "windows")]
+use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, SetForegroundWindow};
+
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rayon::slice::ParallelSliceMut;
 
@@ -136,6 +147,9 @@ pub fn default_settings() -> Settings {
 }
 
 #[derive(Debug, Clone)]
+pub struct Temp {}
+
+#[derive(Debug, Clone)]
 pub struct Tile {
     theme: iced::Theme,
     query: String,
@@ -145,7 +159,10 @@ pub struct Tile {
     options: Vec<App>,
     visible: bool,
     focused: bool,
+    #[cfg(target_os = "macos")]
     frontmost: Option<Retained<NSRunningApplication>>,
+    #[cfg(target_os = "windows")]
+    frontmost: Option<HWND>,
     config: Config,
     open_hotkey_id: u32,
 }
@@ -153,30 +170,61 @@ pub struct Tile {
 impl Tile {
     /// A base window
     pub fn new(keybind_id: u32, config: &Config) -> (Self, Task<Message>) {
-        let (id, open) = window::open(default_settings());
+        let mut settings = default_settings();
+        #[cfg(target_os = "windows")]
+        {
+            // get normal settings and modify position
+            use crate::utils::open_on_focused_monitor;
+            use iced::window::Position::Specific;
+            let pos = open_on_focused_monitor();
+            settings.position = Specific(pos);
+        }
 
-        let open = open.discard().chain(window::run(id, |handle| {
-            macos::macos_window_config(
-                &handle.window_handle().expect("Unable to get window handle"),
-            );
-            // should work now that we have a window
-            transform_process_to_ui_element();
-        }));
+        let (id, open) = window::open(settings);
+
+        #[cfg(target_os = "macos")]
+        {
+            let open = open.discard().chain(window::run(id, |handle| {
+                {
+                    macos::macos_window_config(
+                        &handle.window_handle().expect("Unable to get window handle"),
+                    );
+                    // should work now that we have a window
+                    transform_process_to_ui_element();
+                }
+            }));
+        }
 
         let store_icons = config.theme.show_icons;
+        let paths;
 
-        let user_local_path = std::env::var("HOME").unwrap() + "/Applications/";
-
-        let paths = vec![
-            "/Applications/",
-            user_local_path.as_str(),
-            "/System/Applications/",
-            "/System/Applications/Utilities/",
-        ];
+        #[cfg(target_os = "macos")]
+        {
+            let user_local_path = std::env::var("HOME").unwrap() + "/Applications/";
+            paths = vec![
+                "/Applications/",
+                user_local_path.as_str(),
+                "/System/Applications/",
+                "/System/Applications/Utilities/",
+            ];
+        }
+        #[cfg(target_os = "windows")]
+        {
+            paths = vec!["C:\\Program Files\\", "C:\\Program Files (x86)\\"];
+        }
 
         let mut options: Vec<App> = paths
             .par_iter()
-            .map(|path| get_installed_apps(path, store_icons))
+            .map(|path| {
+                #[cfg(target_os = "macos")]
+                {
+                    get_installed_apps(path, store_icons)
+                }
+                #[cfg(target_os = "windows")]
+                {
+                    get_installed_windows_app(Path::new(path))
+                }
+            })
             .flatten()
             .collect();
 
@@ -206,7 +254,11 @@ impl Tile {
         match message {
             Message::OpenWindow => {
                 self.capture_frontmost();
-                focus_this_app();
+                #[cfg(target_os = "macos")]
+                {
+                    focus_this_app();
+                }
+
                 self.focused = true;
                 Task::none()
             }
@@ -272,16 +324,13 @@ impl Tile {
             Message::ClearSearchQuery => {
                 self.query_lc = String::new();
                 self.query = String::new();
+                self.prev_query_lc = String::new();
                 Task::none()
             }
 
             Message::ReloadConfig => {
                 self.config = toml::from_str(
-                    &fs::read_to_string(
-                        std::env::var("HOME").unwrap_or("".to_owned())
-                            + "/.config/rustcast/config.toml",
-                    )
-                    .unwrap_or("".to_owned()),
+                    &fs::read_to_string(get_config_file_path()).unwrap_or("".to_owned()),
                 )
                 .unwrap();
 
@@ -292,12 +341,29 @@ impl Tile {
                 if hk_id == self.open_hotkey_id {
                     self.visible = !self.visible;
                     if self.visible {
-                        Task::chain(
-                            window::open(default_settings())
-                                .1
-                                .map(|_| Message::OpenWindow),
-                            operation::focus("query"),
-                        )
+                        #[cfg(target_os = "windows")]
+                        {
+                            // get normal settings and modify position
+                            use crate::utils::open_on_focused_monitor;
+                            use iced::window::Position::Specific;
+                            let pos = open_on_focused_monitor();
+                            let mut settings = default_settings();
+                            settings.position = Specific(pos);
+                            Task::chain(
+                                window::open(settings).1.map(|_| Message::OpenWindow),
+                                operation::focus("query"),
+                            )
+                        }
+
+                        #[cfg(target_os = "macos")]
+                        {
+                            Task::chain(
+                                window::open(default_settings())
+                                    .1
+                                    .map(|_| Message::OpenWindow),
+                                operation::focus("query"),
+                            )
+                        }
                     } else {
                         let to_close = window::latest().map(|x| x.unwrap());
                         Task::batch([
@@ -445,18 +511,38 @@ impl Tile {
     }
 
     pub fn capture_frontmost(&mut self) {
-        use objc2_app_kit::NSWorkspace;
+        #[cfg(target_os = "macos")]
+        {
+            use objc2_app_kit::NSWorkspace;
 
-        let ws = NSWorkspace::sharedWorkspace();
-        self.frontmost = ws.frontmostApplication();
+            let ws = NSWorkspace::sharedWorkspace();
+            self.frontmost = ws.frontmostApplication();
+        };
+
+        #[cfg(target_os = "windows")]
+        {
+            self.frontmost = Some(unsafe { GetForegroundWindow() });
+        }
     }
 
     #[allow(deprecated)]
     pub fn restore_frontmost(&mut self) {
-        use objc2_app_kit::NSApplicationActivationOptions;
+        #[cfg(target_os = "macos")]
+        {
+            use objc2_app_kit::NSApplicationActivationOptions;
 
-        if let Some(app) = self.frontmost.take() {
-            app.activateWithOptions(NSApplicationActivationOptions::ActivateIgnoringOtherApps);
+            if let Some(app) = self.frontmost.take() {
+                app.activateWithOptions(NSApplicationActivationOptions::ActivateIgnoringOtherApps);
+            }
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            if let Some(handle) = self.frontmost {
+                unsafe {
+                    let _ = SetForegroundWindow(handle);
+                }
+            }
         }
     }
 }
@@ -493,4 +579,55 @@ fn handle_hotkeys() -> impl futures::Stream<Item = Message> {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     })
+}
+
+fn get_installed_windows_app(path: &Path) -> Vec<App> {
+    use std::ffi::OsString;
+
+    let mut apps = Vec::new();
+
+    let hkey = winreg::RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
+
+    // where we can find installed applications
+    // src: https://stackoverflow.com/questions/2864984/how-to-programatically-get-the-list-of-installed-programs/2892848#2892848
+    let registers = [
+        hkey.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
+            .unwrap(),
+        hkey.open_subkey("SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
+            .unwrap(),
+    ];
+
+    registers.iter().for_each(|reg| {
+        reg.enum_keys().for_each(|key| {
+            // https://learn.microsoft.com/en-us/windows/win32/msi/uninstall-registry-key
+            let name = key.unwrap();
+            let key = reg.open_subkey(&name).unwrap();
+            let display_name = key.get_value("DisplayName").unwrap_or(OsString::new());
+
+            // they might be useful one day ?
+            // let publisher = key.get_value("Publisher").unwrap_or(OsString::new());
+            // let version = key.get_value("DisplayVersion").unwrap_or(OsString::new());
+
+            // Trick, I saw on internet to point to the exe location..
+            let exe_path = key.get_value("DisplayIcon").unwrap_or(OsString::new());
+            if exe_path.is_empty() {
+                return;
+            }
+            // if there is something, it will be in the form of
+            // "C:\Program Files\Microsoft Office\Office16\WINWORD.EXE",0
+            let exe_path = exe_path.to_string_lossy().to_string();
+            let exe = exe_path.split(",").next().unwrap().to_string();
+
+            if !display_name.is_empty() {
+                apps.push(App {
+                    open_command: Function::OpenApp(exe),
+                    name: display_name.clone().into_string().unwrap(),
+                    name_lc: display_name.clone().into_string().unwrap().to_lowercase(),
+                    icons: None,
+                })
+            }
+        });
+    });
+
+    apps
 }
