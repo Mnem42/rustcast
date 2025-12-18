@@ -30,7 +30,7 @@ use spotlight :) Have fun!)
 
 ### Build it youself:
 
-1. Clone the repo with `git clone https://gitub.com/unsecretised/rustcast.git`
+1. Clone the repo with `git clone https://github.com/unsecretised/rustcast.git`
 1. Install `cargo bundle` with `cargo install cargo-bundle` (Requires cargo to
    be installed)
 1. Run `cargo bundle --release` to build RustCast for your system (The App Dir
