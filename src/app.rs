@@ -182,9 +182,9 @@ impl Tile {
 
         let (id, open) = window::open(settings);
 
-        #[cfg(target_os = "macos")]
-        {
-            let open = open.discard().chain(window::run(id, |handle| {
+        let open = open.discard().chain(window::run(id, |handle| {
+            {
+                #[cfg(target_os = "macos")]
                 {
                     macos::macos_window_config(
                         &handle.window_handle().expect("Unable to get window handle"),
@@ -192,15 +192,15 @@ impl Tile {
                     // should work now that we have a window
                     transform_process_to_ui_element();
                 }
-            }));
-        }
+            }
+        }));
 
         let store_icons = config.theme.show_icons;
         let paths;
-
+        let user_local_path: String;
         #[cfg(target_os = "macos")]
         {
-            let user_local_path = std::env::var("HOME").unwrap() + "/Applications/";
+            user_local_path = std::env::var("HOME").unwrap() + "/Applications/";
             paths = vec![
                 "/Applications/",
                 user_local_path.as_str(),
@@ -257,6 +257,15 @@ impl Tile {
                 #[cfg(target_os = "macos")]
                 {
                     focus_this_app();
+                }
+
+                #[cfg(target_os = "windows")]
+                {
+                    if let Some(hwnd) = self.frontmost {
+                        unsafe {
+                            let _ = SetForegroundWindow(hwnd);
+                        }
+                    }
                 }
 
                 self.focused = true;
@@ -581,6 +590,7 @@ fn handle_hotkeys() -> impl futures::Stream<Item = Message> {
     })
 }
 
+#[cfg(target_os = "windows")]
 fn get_installed_windows_app(path: &Path) -> Vec<App> {
     use std::ffi::OsString;
 

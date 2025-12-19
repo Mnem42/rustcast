@@ -1,7 +1,6 @@
 use std::process::Command;
 
 use arboard::Clipboard;
-
 #[cfg(target_os = "macos")]
 use objc2_app_kit::NSWorkspace;
 #[cfg(target_os = "macos")]

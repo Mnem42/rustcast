@@ -5,17 +5,24 @@ use std::{
     process::exit,
 };
 
+use crate::app::{DEFAULT_WINDOW_HEIGHT, WINDOW_WIDTH};
 use global_hotkey::hotkey::Code;
 use iced::{futures::io::Window, widget::image::Handle};
 use icns::IconFamily;
 use image::RgbaImage;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
+#[cfg(target_os = "windows")]
 use windows::Win32::{
     Graphics::Gdi::MonitorFromPoint,
     UI::WindowsAndMessaging::{GetCursor, GetCursorPos},
 };
 
 use crate::{app::App, commands::Function};
+#[cfg(target_os = "macos")]
+use objc2_app_kit::NSWorkspace;
+#[cfg(target_os = "macos")]
+use objc2_foundation::NSURL;
 
 const ERR_LOG_PATH: &str = "/tmp/rustscan-err.log";
 
@@ -307,7 +314,7 @@ pub fn get_config_file_path() -> String {
     let file_path = if cfg!(target_os = "windows") {
         home + "\\rustcast\\config.toml"
     } else {
-        home + "/.rustcast/config.toml"
+        home + "/.config/rustcast/config.toml"
     };
 
     return file_path;
@@ -327,22 +334,18 @@ pub fn create_config_file_if_not_exists(
     file_path: &str,
     config: &Config,
 ) -> Result<(), std::io::Error> {
-    if std::path::Path::new(&get_config_file_path()).exists() {
-        return Ok(());
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::path::Path;
-        let path = Path::new(&file_path);
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).unwrap();
+    // check if file exists
+    if let Ok(exists) = std::fs::metadata(&file_path) {
+        if exists.is_file() {
+            return Ok(());
         }
     }
-    #[cfg(target_os = "macos")]
-    {
-        std::fs::create_dir_all(&file_path).unwrap();
+
+    let path = Path::new(&file_path);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).unwrap();
     }
+
     std::fs::write(
         &file_path,
         toml::to_string(&config).unwrap_or_else(|x| x.to_string()),
@@ -378,7 +381,7 @@ pub fn open_application(path: &String) {
     }
 }
 
-use crate::app::{DEFAULT_WINDOW_HEIGHT, WINDOW_WIDTH};
+#[cfg(target_os = "windows")]
 pub fn open_on_focused_monitor() -> iced::Point {
     use windows::Win32::Foundation::POINT;
     use windows::Win32::Graphics::Gdi::{
