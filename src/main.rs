@@ -1,9 +1,9 @@
 mod app;
 mod commands;
 mod config;
-#[cfg(target_os = "macos")]
 mod macos;
 mod utils;
+mod windows;
 
 // import from utils
 use crate::utils::{create_config_file_if_not_exists, get_config_file_path, read_config_file};

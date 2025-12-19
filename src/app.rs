@@ -1,6 +1,6 @@
 use crate::commands::Function;
 use crate::config::Config;
-use crate::utils::get_config_file_path;
+use crate::utils::{get_config_file_path, get_installed_apps, read_config_file};
 use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 use iced::futures::SinkExt;
 use iced::{
@@ -15,7 +15,6 @@ use iced::{
     },
     window::{self, Id, Settings},
 };
-use std::path::Path;
 
 #[cfg(target_os = "macos")]
 use crate::macos::{focus_this_app, transform_process_to_ui_element};
@@ -147,9 +146,6 @@ pub fn default_settings() -> Settings {
 }
 
 #[derive(Debug, Clone)]
-pub struct Temp {}
-
-#[derive(Debug, Clone)]
 pub struct Tile {
     theme: iced::Theme,
     query: String,
@@ -174,7 +170,7 @@ impl Tile {
         #[cfg(target_os = "windows")]
         {
             // get normal settings and modify position
-            use crate::utils::open_on_focused_monitor;
+            use crate::windows::open_on_focused_monitor;
             use iced::window::Position::Specific;
             let pos = open_on_focused_monitor();
             settings.position = Specific(pos);
@@ -195,38 +191,11 @@ impl Tile {
             }
         }));
 
-        let store_icons = config.theme.show_icons;
-        let paths;
-        let user_local_path: String;
-        #[cfg(target_os = "macos")]
-        {
-            user_local_path = std::env::var("HOME").unwrap() + "/Applications/";
-            paths = vec![
-                "/Applications/",
-                user_local_path.as_str(),
-                "/System/Applications/",
-                "/System/Applications/Utilities/",
-            ];
-        }
-        #[cfg(target_os = "windows")]
-        {
-            paths = vec!["C:\\Program Files\\", "C:\\Program Files (x86)\\"];
-        }
+        // get config
+        let path = get_config_file_path();
+        let config = read_config_file(&path).unwrap();
 
-        let mut options: Vec<App> = paths
-            .par_iter()
-            .map(|path| {
-                #[cfg(target_os = "macos")]
-                {
-                    get_installed_apps(path, store_icons)
-                }
-                #[cfg(target_os = "windows")]
-                {
-                    get_installed_windows_app(Path::new(path))
-                }
-            })
-            .flatten()
-            .collect();
+        let mut options: Vec<App> = get_installed_apps(&config);
 
         options.extend(config.shells.iter().map(|x| x.to_app()));
         options.extend(App::basic_apps());
@@ -259,17 +228,8 @@ impl Tile {
                     focus_this_app();
                 }
 
-                #[cfg(target_os = "windows")]
-                {
-                    if let Some(hwnd) = self.frontmost {
-                        unsafe {
-                            let _ = SetForegroundWindow(hwnd);
-                        }
-                    }
-                }
-
                 self.focused = true;
-                Task::none()
+                operation::focus("query")
             }
 
             Message::SearchQueryChanged(input, id) => {
@@ -353,7 +313,7 @@ impl Tile {
                         #[cfg(target_os = "windows")]
                         {
                             // get normal settings and modify position
-                            use crate::utils::open_on_focused_monitor;
+                            use crate::windows::open_on_focused_monitor;
                             use iced::window::Position::Specific;
                             let pos = open_on_focused_monitor();
                             let mut settings = default_settings();
@@ -588,56 +548,4 @@ fn handle_hotkeys() -> impl futures::Stream<Item = Message> {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     })
-}
-
-#[cfg(target_os = "windows")]
-fn get_installed_windows_app(path: &Path) -> Vec<App> {
-    use std::ffi::OsString;
-
-    let mut apps = Vec::new();
-
-    let hkey = winreg::RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
-
-    // where we can find installed applications
-    // src: https://stackoverflow.com/questions/2864984/how-to-programatically-get-the-list-of-installed-programs/2892848#2892848
-    let registers = [
-        hkey.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
-            .unwrap(),
-        hkey.open_subkey("SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
-            .unwrap(),
-    ];
-
-    registers.iter().for_each(|reg| {
-        reg.enum_keys().for_each(|key| {
-            // https://learn.microsoft.com/en-us/windows/win32/msi/uninstall-registry-key
-            let name = key.unwrap();
-            let key = reg.open_subkey(&name).unwrap();
-            let display_name = key.get_value("DisplayName").unwrap_or(OsString::new());
-
-            // they might be useful one day ?
-            // let publisher = key.get_value("Publisher").unwrap_or(OsString::new());
-            // let version = key.get_value("DisplayVersion").unwrap_or(OsString::new());
-
-            // Trick, I saw on internet to point to the exe location..
-            let exe_path = key.get_value("DisplayIcon").unwrap_or(OsString::new());
-            if exe_path.is_empty() {
-                return;
-            }
-            // if there is something, it will be in the form of
-            // "C:\Program Files\Microsoft Office\Office16\WINWORD.EXE",0
-            let exe_path = exe_path.to_string_lossy().to_string();
-            let exe = exe_path.split(",").next().unwrap().to_string();
-
-            if !display_name.is_empty() {
-                apps.push(App {
-                    open_command: Function::OpenApp(exe),
-                    name: display_name.clone().into_string().unwrap(),
-                    name_lc: display_name.clone().into_string().unwrap().to_lowercase(),
-                    icons: None,
-                })
-            }
-        });
-    });
-
-    apps
 }

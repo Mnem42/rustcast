@@ -1,22 +1,14 @@
 use std::{
     fs::{self, File},
     io::Write,
-    path::{Path, PathBuf},
+    path::Path,
     process::exit,
 };
 
-use crate::app::{DEFAULT_WINDOW_HEIGHT, WINDOW_WIDTH};
 use global_hotkey::hotkey::Code;
-use iced::{futures::io::Window, widget::image::Handle};
+use iced::widget::image::Handle;
 use icns::IconFamily;
 use image::RgbaImage;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-
-#[cfg(target_os = "windows")]
-use windows::Win32::{
-    Graphics::Gdi::MonitorFromPoint,
-    UI::WindowsAndMessaging::{GetCursor, GetCursorPos},
-};
 
 use crate::{app::App, commands::Function};
 #[cfg(target_os = "macos")]
@@ -54,123 +46,6 @@ pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
         image.height(),
         image.into_raw(),
     ))
-}
-
-pub(crate) fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Vec<App> {
-    let entries: Vec<_> = fs::read_dir(dir.as_ref())
-        .unwrap_or_else(|x| {
-            log_error_and_exit(&x.to_string());
-            exit(-1)
-        })
-        .filter_map(|x| x.ok())
-        .collect();
-
-    entries
-        .into_par_iter()
-        .filter_map(|x| {
-            let file_type = x.file_type().unwrap_or_else(|e| {
-                log_error(&e.to_string());
-                exit(-1)
-            });
-            if !file_type.is_dir() {
-                return None;
-            }
-
-            let file_name_os = x.file_name();
-            let file_name = file_name_os.into_string().unwrap_or_else(|e| {
-                log_error(e.to_str().unwrap_or(""));
-                exit(-1)
-            });
-            if !file_name.ends_with(".app") {
-                return None;
-            }
-
-            let path = x.path();
-            let path_str = path.to_str().map(|x| x.to_string()).unwrap_or_else(|| {
-                log_error("Unable to get file_name");
-                exit(-1)
-            });
-
-            let icons = if store_icons {
-                match fs::read_to_string(format!("{}/Contents/Info.plist", path_str)).map(
-                    |content| {
-                        let icon_line = content
-                            .lines()
-                            .scan(false, |expect_next, line| {
-                                if *expect_next {
-                                    *expect_next = false;
-                                    // Return this line to the iterator
-                                    return Some(Some(line));
-                                }
-
-                                if line.trim() == "<key>CFBundleIconFile</key>" {
-                                    *expect_next = true;
-                                }
-
-                                // For lines that are not the one after the key, return None to skip
-                                Some(None)
-                            })
-                            .flatten() // remove the Nones
-                            .next()
-                            .map(|x| {
-                                x.trim()
-                                    .strip_prefix("<string>")
-                                    .unwrap_or("")
-                                    .strip_suffix("</string>")
-                                    .unwrap_or("")
-                            });
-
-                        handle_from_icns(Path::new(&format!(
-                            "{}/Contents/Resources/{}",
-                            path_str,
-                            icon_line.unwrap_or("AppIcon.icns")
-                        )))
-                    },
-                ) {
-                    Ok(Some(a)) => Some(a),
-                    _ => {
-                        // Fallback method
-                        let direntry = fs::read_dir(format!("{}/Contents/Resources", path_str))
-                            .into_iter()
-                            .flatten()
-                            .filter_map(|x| {
-                                let file = x.ok()?;
-                                let name = file.file_name();
-                                let file_name = name.to_str()?;
-                                if file_name.ends_with(".icns") {
-                                    Some(file.path())
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect::<Vec<PathBuf>>();
-
-                        if direntry.len() > 1 {
-                            let icns_vec = direntry
-                                .iter()
-                                .filter(|x| x.ends_with("AppIcon.icns"))
-                                .collect::<Vec<&PathBuf>>();
-                            handle_from_icns(icns_vec.first().unwrap_or(&&PathBuf::new()))
-                        } else if !direntry.is_empty() {
-                            handle_from_icns(direntry.first().unwrap_or(&PathBuf::new()))
-                        } else {
-                            None
-                        }
-                    }
-                }
-            } else {
-                None
-            };
-
-            let name = file_name.strip_suffix(".app").unwrap().to_string();
-            Some(App {
-                open_command: Function::OpenApp(path_str),
-                icons,
-                name_lc: name.to_lowercase(),
-                name,
-            })
-        })
-        .collect()
 }
 
 pub fn to_key_code(key_str: &str) -> Option<Code> {
@@ -300,29 +175,25 @@ pub fn to_key_code(key_str: &str) -> Option<Code> {
 }
 
 pub fn get_config_installation_dir() -> String {
-    let path = if cfg!(target_os = "windows") {
+    if cfg!(target_os = "windows") {
         std::env::var("LOCALAPPDATA").unwrap()
     } else {
         std::env::var("HOME").unwrap()
-    };
-
-    return path;
+    }
 }
 
 pub fn get_config_file_path() -> String {
     let home = get_config_installation_dir();
-    let file_path = if cfg!(target_os = "windows") {
+    if cfg!(target_os = "windows") {
         home + "\\rustcast\\config.toml"
     } else {
         home + "/.config/rustcast/config.toml"
-    };
-
-    return file_path;
+    }
 }
 use crate::config::Config;
 
 pub fn read_config_file(file_path: &str) -> Result<Config, std::io::Error> {
-    let config: Config = match std::fs::read_to_string(&file_path) {
+    let config: Config = match std::fs::read_to_string(file_path) {
         Ok(a) => toml::from_str(&a).unwrap(),
         Err(_) => Config::default(),
     };
@@ -335,10 +206,10 @@ pub fn create_config_file_if_not_exists(
     config: &Config,
 ) -> Result<(), std::io::Error> {
     // check if file exists
-    if let Ok(exists) = std::fs::metadata(&file_path) {
-        if exists.is_file() {
-            return Ok(());
-        }
+    if let Ok(exists) = std::fs::metadata(file_path)
+        && exists.is_file()
+    {
+        return Ok(());
     }
 
     let path = Path::new(&file_path);
@@ -347,7 +218,7 @@ pub fn create_config_file_if_not_exists(
     }
 
     std::fs::write(
-        &file_path,
+        file_path,
         toml::to_string(&config).unwrap_or_else(|x| x.to_string()),
     )
     .unwrap();
@@ -381,29 +252,57 @@ pub fn open_application(path: &String) {
     }
 }
 
-#[cfg(target_os = "windows")]
-pub fn open_on_focused_monitor() -> iced::Point {
-    use windows::Win32::Foundation::POINT;
-    use windows::Win32::Graphics::Gdi::{
-        GetMonitorInfoW, MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromPoint,
+pub fn index_dirs_from_config(apps: &mut Vec<App>) -> bool {
+    let path = get_config_file_path();
+    let config = read_config_file(&path);
+
+    // if config is not valid return false otherwise unwrap config so it is usable
+    let config = match config {
+        Ok(config) => config,
+        Err(err) => {
+            println!("Error reading config file: {}", err);
+            return false;
+        }
     };
-    let mut point = POINT { x: 0, y: 0 };
-    let mut monitor_info = MONITORINFO {
-        cbSize: std::mem::size_of::<MONITORINFO>() as u32,
-        ..Default::default()
-    };
 
-    let cursor = unsafe { GetCursorPos(&mut point) };
-    let monitor = unsafe { MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST) };
-    let monitor_infos = unsafe { GetMonitorInfoW(monitor, &mut monitor_info) };
+    if config.index_dirs.is_empty() {
+        return false;
+    }
 
-    let monitor_width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
-    let monitor_height = monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top;
-    let window_width = WINDOW_WIDTH;
-    let window_height = DEFAULT_WINDOW_HEIGHT;
+    config.index_dirs.clone().iter().for_each(|dir| {
+        // check if dir exists
+        if !Path::new(dir).exists() {
+            println!("Directory {} does not exist", dir);
+            return;
+        }
 
-    let x = monitor_info.rcMonitor.left as f32 + (monitor_width as f32 - window_width) / 2.0;
-    let y = monitor_info.rcMonitor.top as f32 + (monitor_height as f32 - window_height) / 2.0;
+        let paths = fs::read_dir(dir).unwrap();
 
-    return iced::Point { x, y };
+        for path in paths {
+            let path = path.unwrap().path();
+            let metadata = fs::metadata(&path).unwrap();
+
+            if metadata.is_file() && Path::new(&path).extension().unwrap() == "exe" {
+                let display_name = path.file_name().unwrap().to_string_lossy().to_string();
+                apps.push(App {
+                    open_command: Function::OpenApp(path.to_string_lossy().to_string()),
+                    name: display_name.clone(),
+                    name_lc: display_name.clone().to_lowercase(),
+                    icons: None,
+                });
+            }
+        }
+    });
+
+    true
+}
+
+pub fn get_installed_apps(config: &Config) -> Vec<App> {
+    if cfg!(target_os = "macos") {
+        use crate::macos::get_installed_macos_apps;
+        get_installed_macos_apps(config)
+    } else {
+        use crate::windows::get_installed_apps_windows;
+        get_installed_apps_windows()
+    }
 }
