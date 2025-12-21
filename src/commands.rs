@@ -25,11 +25,7 @@ impl Function {
                 ));
             }
             Function::RunShellCommand => {
-                Command::new("sh")
-                    .arg("-c")
-                    .arg(query)
-                    .status()
-                    .ok();
+                Command::new("sh").arg("-c").arg(query).status().ok();
             }
             Function::RandomVar(var) => {
                 Clipboard::new()
