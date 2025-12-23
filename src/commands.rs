@@ -53,13 +53,14 @@ impl Function {
             }
 
             Function::OpenPrefPane => {
-                Command::new("open")
-                    .arg(
-                        std::env::var("HOME").unwrap_or("".to_string())
-                            + "/.config/rustcast/config.toml",
-                    )
-                    .spawn()
-                    .ok();
+                thread::spawn(move || {
+                    NSWorkspace::new().openURL(&NSURL::fileURLWithPath(
+                        &objc2_foundation::NSString::from_str(
+                            &(std::env::var("HOME").unwrap_or("".to_string())
+                                + "/.config/rustcast/config.toml"),
+                        ),
+                    ));
+                });
             }
             Function::Quit => std::process::exit(0),
         }
