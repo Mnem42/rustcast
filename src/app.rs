@@ -358,9 +358,7 @@ impl Tile {
                 Task::none()
             }
 
-            Message::ShowClipboardHistory => {
-                Task::none()
-            },
+            Message::ShowClipboardHistory => Task::none(),
 
             Message::_Nothing => Task::none(),
         }
