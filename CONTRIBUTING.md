@@ -20,3 +20,28 @@ For bug fixes, and helping people to solve their github issues: see
 1. Code must compile...
 1. A video recording / screenshot would be an added bonus in getting your pull
    request merged faster.
+
+## Codebase:
+
+```
+.
+├── bundling # Bundling related stuff, ignore for the most bit
+│   ├── entitlements.plist
+│   ├── icon.icns
+│   └── Info.plist
+├── docs # Website and documentation related stuff. If something new is added to config, then modify this as well before PR-ing
+├── Cargo.lock 
+├── Cargo.toml
+├── CONTRIBUTING.md
+├── EXTENSIONS.md
+├── LICENSE.md
+├── README.md
+└── src
+    ├── app.rs        # Main app logic
+    ├── calculator.rs # Calculator logic 
+    ├── commands.rs   # Logic for different commands
+    ├── config.rs     # Configuration related stuff
+    ├── macos.rs      # Macos specific config
+    ├── main.rs       # Start app
+    └── utils.rs      # Common functions that are used across files
+```
