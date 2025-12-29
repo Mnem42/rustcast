@@ -4,13 +4,14 @@ use arboard::Clipboard;
 use objc2_app_kit::NSWorkspace;
 use objc2_foundation::NSURL;
 
-use crate::{calculator::Expression, config::Config};
+use crate::{calculator::Expression, clipboard::ClipBoardContentType, config::Config};
 
 #[derive(Debug, Clone)]
 pub enum Function {
     OpenApp(String),
     RunShellCommand(String, String),
     RandomVar(i32),
+    CopyToClipboard(ClipBoardContentType),
     GoogleSearch(String),
     Calculate(Expression),
     OpenPrefPane,
@@ -66,6 +67,15 @@ impl Function {
                     .set_text(expr.eval().to_string())
                     .unwrap_or(());
             }
+
+            Function::CopyToClipboard(clipboard_content) => match clipboard_content {
+                ClipBoardContentType::Text(text) => {
+                    Clipboard::new().unwrap().set_text(text).ok();
+                }
+                ClipBoardContentType::Image(img) => {
+                    Clipboard::new().unwrap().set_image(img.to_owned_img()).ok();
+                }
+            },
 
             Function::OpenPrefPane => {
                 thread::spawn(move || {

@@ -56,7 +56,6 @@ bit wonky, and will be fixed in the upcoming releases
 
 - [ ] Select the options using arrow keys
 - [ ] Popup note-taking
-- [ ] Clipboard History
 - [ ] Plugin Support (Partially implemented on 15/12/2025)
 - [ ] Blur / transparent background (Partially implemented on 13/12/2025)
 - [ ] Hyperkey - Map CMD + OPT + CTRL + SHIFT to a physical key
@@ -79,6 +78,9 @@ bit wonky, and will be fixed in the upcoming releases
 - [x] Google your query. Simply type your query, and then put a `?` at the end,
       and press enter
 - [x] Calculator (27/12/2025)
+- [x] Clipboard History (29/12/2025) This works by typing `cbhist` to enter the
+      cliboard history page, which allows u to access your clipboard history,
+      and then use `main` to switch back, or just open an close the app again
 
 ### Not Possible by me:
 
