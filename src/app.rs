@@ -8,6 +8,7 @@ use crate::{macos, utils::get_installed_apps};
 use arboard::Clipboard;
 use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 use iced::futures::SinkExt;
+use iced::widget::text::LineHeight;
 use iced::{
     Alignment, Element, Fill, Subscription, Task, Theme,
     alignment::Vertical,
@@ -425,6 +426,7 @@ impl Tile {
                 })
                 .id("query")
                 .width(Fill)
+                .line_height(LineHeight::Relative(1.5))
                 .padding(20);
 
             match self.page {
