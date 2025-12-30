@@ -1,3 +1,4 @@
+//! This is the config file type definitions for rustcast
 use std::{path::Path, sync::Arc};
 
 use iced::{theme::Custom, widget::image::Handle};
@@ -5,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{app::App, commands::Function, utils::handle_from_icns};
 
+/// The main config struct (effectively the config file's "schema")
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
@@ -18,6 +20,7 @@ pub struct Config {
 }
 
 impl Default for Config {
+    /// The default config
     fn default() -> Self {
         Self {
             toggle_mod: "ALT".to_string(),
@@ -31,6 +34,7 @@ impl Default for Config {
     }
 }
 
+/// The settings you can set for the theme
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Theme {
@@ -90,6 +94,7 @@ impl From<Theme> for iced::Theme {
 }
 
 impl Theme {
+    /// Return the text color in the theme config of type [`iced::Color`]
     pub fn text_color(&self, opacity: f32) -> iced::Color {
         let theme = self.to_owned();
         iced::Color {
@@ -100,6 +105,7 @@ impl Theme {
         }
     }
 
+    /// Return the background color in the theme config of type [`iced::Color`]
     pub fn bg_color(&self) -> iced::Color {
         iced::Color {
             r: self.background_color.0,
@@ -110,6 +116,11 @@ impl Theme {
     }
 }
 
+/// The rules for the buffer AKA search results
+///
+/// - clear_on_hide is whether the buffer should be cleared when the window is hidden
+/// - clear_on_enter is whether the buffer should be cleared when the user presses enter after
+/// searching
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Buffer {
@@ -138,6 +149,7 @@ pub struct Shelly {
 }
 
 impl Shelly {
+    /// Converts the shelly struct to an app so that it can be added to the app list
     pub fn to_app(&self) -> App {
         let self_clone = self.clone();
         let icon = self_clone.icon_path.and_then(|x| {

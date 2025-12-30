@@ -1,3 +1,5 @@
+//! This handles all the different commands that rustcast can perform, such as opening apps,
+//! copying to clipboard, etc.
 use std::{process::Command, thread};
 
 use arboard::Clipboard;
@@ -6,11 +8,12 @@ use objc2_foundation::NSURL;
 
 use crate::{calculator::Expression, clipboard::ClipBoardContentType, config::Config};
 
+/// The different functions that rustcast can perform
 #[derive(Debug, Clone)]
 pub enum Function {
     OpenApp(String),
     RunShellCommand(String, String),
-    RandomVar(i32),
+    RandomVar(i32), // Easter egg function
     CopyToClipboard(ClipBoardContentType),
     GoogleSearch(String),
     Calculate(Expression),
@@ -19,6 +22,7 @@ pub enum Function {
 }
 
 impl Function {
+    /// Run the command
     pub fn execute(&self, config: &Config, query: &str) {
         match self {
             Function::OpenApp(path) => {

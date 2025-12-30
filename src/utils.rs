@@ -1,3 +1,4 @@
+//! This has all the utility functions that rustcast uses
 use std::{
     fs::{self, File},
     io::Write,
@@ -13,19 +14,24 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{app::App, commands::Function};
 
+/// The default error log path (works only on unix systems, and must be changed for windows
+/// support)
 const ERR_LOG_PATH: &str = "/tmp/rustscan-err.log";
 
+/// This logs an error to the error log file
 pub(crate) fn log_error(msg: &str) {
     if let Ok(mut file) = File::options().create(true).append(true).open(ERR_LOG_PATH) {
         let _ = file.write_all(msg.as_bytes()).ok();
     }
 }
 
+/// This logs an error to the error log file, and exits the program
 pub(crate) fn log_error_and_exit(msg: &str) {
     log_error(msg);
     exit(-1)
 }
 
+/// This converts an icns file to an iced image handle
 pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
     let data = std::fs::read(path).ok()?;
     let family = IconFamily::read(std::io::Cursor::new(&data)).ok()?;
@@ -45,6 +51,9 @@ pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
     ))
 }
 
+/// This gets all the installed apps in the given directory
+///
+/// the directories are defined in [`crate::app::Tile::new`]
 pub(crate) fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Vec<App> {
     let entries: Vec<_> = fs::read_dir(dir.as_ref())
         .unwrap_or_else(|x| {
@@ -163,6 +172,7 @@ pub(crate) fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Ve
         .collect()
 }
 
+/// This converts a string to a [`Code`] enum so that it can be used as a hotkey
 pub fn to_key_code(key_str: &str) -> Option<Code> {
     match key_str.to_lowercase().as_str() {
         // Letters

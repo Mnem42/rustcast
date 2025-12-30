@@ -1,3 +1,4 @@
+//! Main logic for the app
 use crate::calculator::Expression;
 use crate::clipboard::ClipBoardContentType;
 use crate::commands::Function;
@@ -31,11 +32,20 @@ use std::cmp::min;
 use std::time::Duration;
 use std::{fs, thread};
 
+/// The default window width
 pub const WINDOW_WIDTH: f32 = 500.;
+
+/// The default window height
 pub const DEFAULT_WINDOW_HEIGHT: f32 = 65.;
 
+/// The rustcast descriptor name to be put for all rustcast commands
 pub const RUSTCAST_DESC_NAME: &str = "RustCast";
 
+/// The main app struct, that represents an "App"
+///
+/// This struct represents a command that rustcast can perform, providing the rustcast
+/// the data needed to search for the app, to display the app in search results, and to actually
+/// "run" the app.
 #[derive(Debug, Clone)]
 pub struct App {
     pub open_command: Function,
@@ -46,6 +56,7 @@ pub struct App {
 }
 
 impl App {
+    /// This returns the basic apps that rustcast has, such as quiting rustcast and opening preferences
     pub fn basic_apps() -> Vec<App> {
         vec![
             App {
@@ -65,6 +76,7 @@ impl App {
         ]
     }
 
+    /// This renders the app into an iced element, allowing it to be displayed in the search results
     pub fn render(&self, theme: &crate::config::Theme) -> impl Into<iced::Element<'_, Message>> {
         let mut tile = Row::new().width(Fill).height(55);
 
@@ -119,12 +131,14 @@ impl App {
     }
 }
 
+/// The different pages that rustcast can have / has
 #[derive(Debug, Clone, PartialEq)]
 pub enum Page {
     Main,
     ClipboardHistory,
 }
 
+/// The message type that iced uses for actions that can do something
 #[derive(Debug, Clone)]
 pub enum Message {
     OpenWindow,
@@ -140,6 +154,7 @@ pub enum Message {
     _Nothing,
 }
 
+/// The window settings for rustcast
 pub fn default_settings() -> Settings {
     Settings {
         resizable: false,
@@ -156,6 +171,21 @@ pub fn default_settings() -> Settings {
     }
 }
 
+/// This is the base window, and its a "Tile"
+/// Its fields are:
+/// - Theme ([`iced::Theme`])
+/// - Query (String)
+/// - Query Lowercase (String, but lowercase)
+/// - Previous Query Lowercase (String)
+/// - Results (Vec<[`App`]>) the results of the search
+/// - Options (Vec<[`App`]>) the options to search through
+/// - Visible (bool) whether the window is visible or not
+/// - Focused (bool) whether the window is focused or not
+/// - Frontmost ([`Option<Retained<NSRunningApplication>>`]) the frontmost application before the window was opened
+/// - Config ([`Config`]) the app's config
+/// - Open Hotkey ID (`u32`) the id of the hotkey that opens the window
+/// - Clipboard Content (`Vec<`[`ClipBoardContentType`]`>`) all of the cliboard contents
+/// - Page ([`Page`]) the current page of the window (main or clipboard history)
 #[derive(Debug, Clone)]
 pub struct Tile {
     theme: iced::Theme,
@@ -174,7 +204,7 @@ pub struct Tile {
 }
 
 impl Tile {
-    /// A base window
+    /// Initialise the base window
     pub fn new(keybind_id: u32, config: &Config) -> (Self, Task<Message>) {
         let (id, open) = window::open(default_settings());
 
@@ -227,6 +257,7 @@ impl Tile {
         )
     }
 
+    /// This handles the iced's updates, which have all the variants of [Message]
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::OpenWindow => {
@@ -412,6 +443,10 @@ impl Tile {
         }
     }
 
+    /// This is the view of the window. It handles the rendering of the window
+    ///
+    /// The rendering of the window size (the resizing of the window) is handled by the
+    /// [`Tile::update`] function.
     pub fn view(&self, wid: window::Id) -> Element<'_, Message> {
         if self.visible {
             let title_input = text_input(self.config.placeholder.as_str(), &self.query)
@@ -456,10 +491,20 @@ impl Tile {
         }
     }
 
+    /// This returns the theme of the window
     pub fn theme(&self, _: window::Id) -> Option<Theme> {
         Some(self.theme.clone())
     }
 
+    /// This handles the subscriptions of the window
+    ///
+    /// The subscriptions are:
+    /// - Hotkeys
+    /// - Hot reloading
+    /// - Clipboard history
+    /// - Window close events
+    /// - Keypresses (escape to close the window)
+    /// - Window focus changes
     pub fn subscription(&self) -> Subscription<Message> {
         Subscription::batch([
             Subscription::run(handle_hotkeys),
@@ -492,6 +537,11 @@ impl Tile {
         ])
     }
 
+    /// Handles the search query changed event.
+    ///
+    /// This is separate from the `update` function because it has a decent amount of logic, and
+    /// should be separated out to make it easier to test. This function is called by the `update`
+    /// function to handle the search query changed event.
     pub fn handle_search_query_changed(&mut self) {
         let filter_vec: &Vec<App> = if self.query_lc.starts_with(&self.prev_query_lc) {
             self.prev_query_lc = self.query_lc.to_owned();
@@ -526,6 +576,7 @@ impl Tile {
         self.results = exact;
     }
 
+    /// Gets the frontmost application to focus later.
     pub fn capture_frontmost(&mut self) {
         use objc2_app_kit::NSWorkspace;
 
@@ -533,6 +584,7 @@ impl Tile {
         self.frontmost = ws.frontmostApplication();
     }
 
+    /// Restores the frontmost application.
     #[allow(deprecated)]
     pub fn restore_frontmost(&mut self) {
         use objc2_app_kit::NSApplicationActivationOptions;
@@ -543,6 +595,7 @@ impl Tile {
     }
 }
 
+/// This is the subscription function that handles hot reloading of the config
 fn handle_hot_reloading() -> impl futures::Stream<Item = Message> {
     stream::channel(100, async |mut output| {
         let content = fs::read_to_string(
@@ -563,6 +616,7 @@ fn handle_hot_reloading() -> impl futures::Stream<Item = Message> {
     })
 }
 
+/// This is the subscription function that handles hotkeys for hiding / showing the window
 fn handle_hotkeys() -> impl futures::Stream<Item = Message> {
     stream::channel(100, async |mut output| {
         let receiver = GlobalHotKeyEvent::receiver();
@@ -577,6 +631,7 @@ fn handle_hotkeys() -> impl futures::Stream<Item = Message> {
     })
 }
 
+/// This is the subscription function that handles the change in clipboard history
 fn handle_clipboard_history() -> impl futures::Stream<Item = Message> {
     stream::channel(100, async |mut output| {
         let mut clipboard = Clipboard::new().unwrap();

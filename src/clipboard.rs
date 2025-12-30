@@ -1,3 +1,4 @@
+//! This has all the logic regarding the cliboard history
 use arboard::ImageData;
 use iced::{
     Length::Fill,
@@ -8,6 +9,7 @@ use iced::{
 
 use crate::{app::Message, commands::Function};
 
+/// The kinds of clipboard content that rustcast can handle and their contents
 #[derive(Debug, Clone)]
 pub enum ClipBoardContentType {
     Text(String),
@@ -15,6 +17,7 @@ pub enum ClipBoardContentType {
 }
 
 impl ClipBoardContentType {
+    /// Returns the iced element for rendering the clipboard item
     pub fn render_clipboard_item(&self) -> impl Into<iced::Element<'_, Message>> {
         let mut tile = Row::new().width(Fill).height(55);
 
@@ -58,6 +61,7 @@ impl ClipBoardContentType {
 }
 
 impl PartialEq for ClipBoardContentType {
+    /// Let cliboard items be comparable
     fn eq(&self, other: &Self) -> bool {
         if let Self::Text(a) = self
             && let Self::Text(b) = other
