@@ -31,6 +31,7 @@ pub enum Message {
     KeyPressed(u32),
     HideWindow(Id),
     RunFunction(Function),
+    ReturnFocus,
     ClearSearchResults,
     WindowFocusChanged(Id, bool),
     ClearSearchQuery,

@@ -154,6 +154,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                         } else {
                             Message::_Nothing
                         }),
+                        Task::done(Message::ReturnFocus),
                     ])
                 }
             } else {
@@ -164,23 +165,36 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
         Message::RunFunction(command) => {
             command.execute(&tile.config, &tile.query);
 
+            let return_focus_task = match &command {
+                Function::OpenApp(_) | Function::OpenPrefPane | Function::GoogleSearch(_) => {
+                    Task::none()
+                }
+                _ => Task::done(Message::ReturnFocus),
+            };
+
             if tile.config.buffer_rules.clear_on_enter {
                 window::latest()
                     .map(|x| x.unwrap())
                     .map(Message::HideWindow)
                     .chain(Task::done(Message::ClearSearchQuery))
+                    .chain(return_focus_task)
             } else {
                 Task::none()
             }
         }
 
         Message::HideWindow(a) => {
-            tile.restore_frontmost();
             tile.visible = false;
             tile.focused = false;
             tile.page = Page::Main;
             Task::batch([window::close(a), Task::done(Message::ClearSearchResults)])
         }
+
+        Message::ReturnFocus => {
+            tile.restore_frontmost();
+            Task::none()
+        }
+
         Message::ClearSearchResults => {
             tile.results = vec![];
             Task::none()
