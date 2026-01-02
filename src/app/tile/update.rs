@@ -146,14 +146,16 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                         operation::focus("query"),
                     )
                 } else {
+                    let clear_search_query = if tile.config.buffer_rules.clear_on_hide {
+                        Task::done(Message::ClearSearchQuery)
+                    } else {
+                        Task::none()
+                    };
+
                     let to_close = window::latest().map(|x| x.unwrap());
                     Task::batch([
                         to_close.map(Message::HideWindow),
-                        Task::done(if tile.config.buffer_rules.clone().clear_on_hide {
-                            Message::ClearSearchQuery
-                        } else {
-                            Message::_Nothing
-                        }),
+                        clear_search_query,
                         Task::done(Message::ReturnFocus),
                     ])
                 }
@@ -212,7 +214,5 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             tile.clipboard_content.insert(0, clip_content);
             Task::none()
         }
-
-        Message::_Nothing => Task::none(),
     }
 }

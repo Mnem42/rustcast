@@ -73,11 +73,13 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
         let title_input = text_input(tile.config.placeholder.as_str(), &tile.query)
             .on_input(move |a| Message::SearchQueryChanged(a, wid))
             .on_paste(move |a| Message::SearchQueryChanged(a, wid))
-            .on_submit({
-                if tile.results.is_empty() {
-                    Message::_Nothing
+            .on_submit_maybe({
+                if !tile.results.is_empty() {
+                    Some(Message::RunFunction(
+                        tile.results.first().unwrap().to_owned().open_command,
+                    ))
                 } else {
-                    Message::RunFunction(tile.results.first().unwrap().to_owned().open_command)
+                    None
                 }
             })
             .id("query")

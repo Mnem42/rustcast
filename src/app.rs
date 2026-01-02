@@ -37,7 +37,6 @@ pub enum Message {
     ClearSearchQuery,
     ReloadConfig,
     ClipboardHistory(ClipBoardContentType),
-    _Nothing,
 }
 
 /// The window settings for rustcast
