@@ -1,7 +1,7 @@
 //! This handle the logic for the calculator in rustcast
 
 /// A struct that represents an expression
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Expression {
     pub first_num: f64,
     pub operation: Operation,
@@ -9,7 +9,7 @@ pub struct Expression {
 }
 
 /// An enum that represents the different operations that can be performed on an expression
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operation {
     Addition,
     Subtraction,

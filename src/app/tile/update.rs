@@ -92,6 +92,18 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
 
             let max_elem = min(5, new_length);
 
+            if tile.results
+                == vec![App {
+                    open_command: Function::Nothing,
+                    desc: RUSTCAST_DESC_NAME.to_string(),
+                    icons: None,
+                    name: "Clipboard History".to_string(),
+                    name_lc: "clipboard".to_string(),
+                }]
+            {
+                tile.page = Page::ClipboardHistory
+            }
+
             if prev_size != new_length && tile.page == Page::Main {
                 std::thread::sleep(Duration::from_millis(30));
 

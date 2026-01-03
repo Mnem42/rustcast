@@ -18,7 +18,7 @@ use crate::{
 /// This struct represents a command that rustcast can perform, providing the rustcast
 /// the data needed to search for the app, to display the app in search results, and to actually
 /// "run" the app.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct App {
     pub open_command: Function,
     pub desc: String,
@@ -44,6 +44,13 @@ impl App {
                 icons: None,
                 name: "Open RustCast Preferences".to_string(),
                 name_lc: "settings".to_string(),
+            },
+            App {
+                open_command: Function::Nothing,
+                desc: RUSTCAST_DESC_NAME.to_string(),
+                icons: None,
+                name: "Clipboard History".to_string(),
+                name_lc: "clipboard".to_string(),
             },
         ]
     }

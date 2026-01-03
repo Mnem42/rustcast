@@ -9,7 +9,7 @@ use objc2_foundation::NSURL;
 use crate::{calculator::Expression, clipboard::ClipBoardContentType, config::Config};
 
 /// The different functions that rustcast can perform
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Function {
     OpenApp(String),
     RunShellCommand(String, String),
@@ -18,6 +18,7 @@ pub enum Function {
     GoogleSearch(String),
     Calculate(Expression),
     OpenPrefPane,
+    Nothing,
     Quit,
 }
 
@@ -91,6 +92,7 @@ impl Function {
                     ));
                 });
             }
+            Function::Nothing => {}
             Function::Quit => std::process::exit(0),
         }
     }
