@@ -1,6 +1,8 @@
 //! This modules handles the logic for each "app" that rustcast can load
 //!
 //! An "app" is effectively, one of the results that rustcast returns when you search for something
+use std::path::Path;
+
 use iced::{
     Alignment, Background,
     Length::Fill,
@@ -11,6 +13,7 @@ use iced::{
 use crate::{
     app::{Message, RUSTCAST_DESC_NAME},
     commands::Function,
+    utils::handle_from_icns,
 };
 
 /// The main app struct, that represents an "App"
@@ -60,6 +63,17 @@ impl App {
                 icons: None,
                 name: format!("RustCast Version: {app_version}"),
                 name_lc: "version".to_string(),
+            },
+            App {
+                open_command: Function::OpenApp(
+                    "/System/Library/CoreServices/Finder.app".to_string(),
+                ),
+                desc: RUSTCAST_DESC_NAME.to_string(),
+                icons: handle_from_icns(Path::new(
+                    "/System/Library/CoreServices/Finder.app/Contents/Resources/Finder.icns",
+                )),
+                name: "Finder".to_string(),
+                name_lc: "finder".to_string(),
             },
         ]
     }
