@@ -57,8 +57,8 @@ impl Default for Theme {
     fn default() -> Self {
         Self {
             text_color: (0.95, 0.95, 0.96),
-            background_color: (0.11, 0.11, 0.13),
-            background_opacity: 1.,
+            background_color: (0., 0., 0.),
+            background_opacity: 0.25,
             blur: false,
             show_icons: true,
             show_scroll_bar: true,
