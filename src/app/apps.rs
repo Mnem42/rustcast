@@ -7,7 +7,7 @@ use iced::{
     Alignment, Background,
     Length::Fill,
     alignment::Vertical,
-    widget::{Button, Row, Text, container, image::Viewer, space},
+    widget::{Button, Row, Text, container, image::Viewer},
 };
 
 use crate::{
@@ -101,23 +101,18 @@ impl App {
     ) -> impl Into<iced::Element<'a, Message>> {
         let mut tile = Row::new().width(Fill).height(55);
 
-        if theme.show_icons {
-            if let Some(icon) = &self.icons {
-                tile = tile
-                    .push(Viewer::new(icon).height(35).width(35))
-                    .align_y(Alignment::Center);
-            } else {
-                tile = tile
-                    .push(space().height(Fill))
-                    .width(55)
-                    .height(55)
-                    .align_y(Alignment::Center);
-            }
+        if theme.show_icons
+            && let Some(icon) = &self.icons
+        {
+            tile = tile
+                .push(Viewer::new(icon).height(35).width(35))
+                .align_y(Alignment::Center);
         }
 
         tile = tile.push(
             Button::new(
                 Text::new(&self.name)
+                    .font(theme.font())
                     .height(Fill)
                     .width(Fill)
                     .color(theme.text_color(1.))
@@ -131,7 +126,7 @@ impl App {
                 }
             })
             .style(|_, _| iced::widget::button::Style {
-                background: Some(Background::Color(theme.bg_color())),
+                background: None,
                 text_color: theme.text_color(1.),
                 ..Default::default()
             })
@@ -140,7 +135,14 @@ impl App {
         );
 
         tile = tile
-            .push(container(Text::new(&self.desc).color(theme.text_color(0.4))).padding(15))
+            .push(
+                container(
+                    Text::new(&self.desc)
+                        .font(theme.font())
+                        .color(theme.text_color(0.4)),
+                )
+                .padding(15),
+            )
             .width(Fill);
 
         container(tile)

@@ -3,7 +3,7 @@ use std::{path::Path, sync::Arc};
 
 use global_hotkey::hotkey::Code;
 
-use iced::{theme::Custom, widget::image::Handle};
+use iced::{Font, font::Family, theme::Custom, widget::image::Handle};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -50,17 +50,19 @@ pub struct Theme {
     pub blur: bool,
     pub show_icons: bool,
     pub show_scroll_bar: bool,
+    pub font: Option<String>,
 }
 
 impl Default for Theme {
     fn default() -> Self {
         Self {
             text_color: (0.95, 0.95, 0.96),
-            background_color: (0.11, 0.11, 0.13),
-            background_opacity: 1.,
+            background_color: (0., 0., 0.),
+            background_opacity: 0.25,
             blur: false,
             show_icons: true,
             show_scroll_bar: true,
+            font: None,
         }
     }
 }
@@ -118,6 +120,21 @@ impl Theme {
             g: self.background_color.1,
             b: self.background_color.2,
             a: self.background_opacity,
+        }
+    }
+
+    /// Return the font in the theme config of type [`iced::Font`]
+    pub fn font(&self) -> Font {
+        let opt_font_name = self.font.clone();
+        match opt_font_name {
+            Some(font_name) => Font {
+                family: Family::Name(font_name.leak()),
+                ..Default::default()
+            },
+            None => Font {
+                family: Family::SansSerif,
+                ..Default::default()
+            },
         }
     }
 }

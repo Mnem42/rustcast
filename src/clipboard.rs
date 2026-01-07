@@ -2,12 +2,11 @@
 use arboard::ImageData;
 use iced::{
     Length::Fill,
-    Theme,
     alignment::Vertical,
     widget::{Button, Row, Text, container},
 };
 
-use crate::{app::Message, commands::Function};
+use crate::{app::Message, commands::Function, config::Theme as ConfigTheme};
 
 /// The kinds of clipboard content that rustcast can handle and their contents
 #[derive(Debug, Clone)]
@@ -18,7 +17,10 @@ pub enum ClipBoardContentType {
 
 impl ClipBoardContentType {
     /// Returns the iced element for rendering the clipboard item
-    pub fn render_clipboard_item(&self) -> impl Into<iced::Element<'_, Message>> {
+    pub fn render_clipboard_item(
+        &self,
+        theme: ConfigTheme,
+    ) -> impl Into<iced::Element<'_, Message>> {
         let mut tile = Row::new().width(Fill).height(55);
 
         let text = match self {
@@ -26,9 +28,16 @@ impl ClipBoardContentType {
             ClipBoardContentType::Image(_) => "<img>",
         };
 
+        let bg_color = theme.bg_color();
+        let bg_color_clone = bg_color;
+
+        let text_color = theme.text_color(1.);
+        let text_color_clone = text_color;
+
         tile = tile.push(
             Button::new(
                 Text::new(text.to_owned())
+                    .font(theme.font())
                     .height(Fill)
                     .width(Fill)
                     .align_y(Vertical::Center),
@@ -36,11 +45,9 @@ impl ClipBoardContentType {
             .on_press(Message::RunFunction(Function::CopyToClipboard(
                 self.to_owned(),
             )))
-            .style(|_, _| iced::widget::button::Style {
-                background: Some(iced::Background::Color(
-                    Theme::KanagawaDragon.palette().background,
-                )),
-                text_color: Theme::KanagawaDragon.palette().text,
+            .style(move |_, _| iced::widget::button::Style {
+                background: Some(iced::Background::Color(bg_color_clone)),
+                text_color: text_color_clone,
                 ..Default::default()
             })
             .width(Fill)
@@ -48,11 +55,9 @@ impl ClipBoardContentType {
         );
 
         container(tile)
-            .style(|_| iced::widget::container::Style {
-                text_color: Some(Theme::KanagawaDragon.palette().text),
-                background: Some(iced::Background::Color(
-                    Theme::KanagawaDragon.palette().background,
-                )),
+            .style(move |_| iced::widget::container::Style {
+                text_color: Some(text_color),
+                background: Some(iced::Background::Color(bg_color)),
                 ..Default::default()
             })
             .width(Fill)
