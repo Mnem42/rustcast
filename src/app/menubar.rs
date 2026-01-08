@@ -7,13 +7,14 @@ pub fn new_menu_icon(mtm: MainThreadMarker) {
     let status_item = status_bar.statusItemWithLength(NSVariableStatusItemLength);
 
     if let Some(button) = status_item.button(mtm) {
-        button.setTitle(&NSString::from_str("RustCast"));
         if let Some(image) = NSImage::imageNamed(&NSString::from_str("icon")) {
             image.setSize(NSSize {
                 width: 25.,
                 height: 25.,
             });
             button.setImage(Some(&image));
+        } else {
+            button.setTitle(&NSString::from_str("RustCast"));
         }
     }
 
