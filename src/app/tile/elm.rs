@@ -1,12 +1,15 @@
 //! This module handles the logic for the new and view functions according to the elm
 //! architecture. If the subscription function becomes too large, it should be moved to this file
+use iced::border::Radius;
 use iced::widget::scrollable::{Direction, Scrollbar};
 use iced::widget::text::LineHeight;
-use iced::widget::{Column, Scrollable, space};
-use iced::window;
+use iced::widget::{Column, Scrollable, container, space};
+use iced::{Color, window};
 use iced::{Element, Task};
 use iced::{Length::Fill, widget::text_input};
+
 use objc2::MainThreadMarker;
+
 use rayon::{
     iter::{IntoParallelRefIterator, ParallelIterator},
     slice::ParallelSliceMut,
@@ -110,7 +113,7 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
         } else {
             Direction::Vertical(Scrollbar::hidden())
         };
-        match tile.page {
+        let contents = match tile.page {
             Page::Main => {
                 let mut search_results = Column::new();
                 for result in &tile.results {
@@ -118,7 +121,7 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
                 }
 
                 let scrollable = Scrollable::with_direction(search_results, scrollbar_direction);
-                Column::new().push(title_input).push(scrollable).into()
+                Column::new().push(title_input).push(scrollable)
             }
             Page::ClipboardHistory => {
                 let mut clipboard_history = Column::new();
@@ -127,9 +130,24 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
                         .push(result.render_clipboard_item(tile.config.theme.clone()));
                 }
                 let scrollable = Scrollable::with_direction(clipboard_history, scrollbar_direction);
-                Column::new().push(title_input).push(scrollable).into()
+                Column::new().push(title_input).push(scrollable)
             }
-        }
+        };
+
+        container(contents)
+            .style(|_| iced::widget::container::Style {
+                background: None,
+                text_color: None,
+                border: iced::Border {
+                    color: tile.config.theme.text_color(1.),
+                    width: 1.,
+                    radius: Radius::new(0),
+                },
+                ..Default::default()
+            })
+            .padding(0)
+            .clip(true)
+            .into()
     } else {
         space().into()
     }
@@ -137,7 +155,7 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
 
 fn text_input_style(theme: &Theme) -> iced::widget::text_input::Style {
     text_input::Style {
-        background: iced::Background::Color(theme.bg_color()),
+        background: iced::Background::Color(Color::TRANSPARENT),
         border: iced::Border {
             color: iced::Color {
                 r: 0.95,
