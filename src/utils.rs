@@ -4,11 +4,14 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     process::exit,
+    thread,
 };
 
 use iced::widget::image::Handle;
 use icns::IconFamily;
 use image::RgbaImage;
+use objc2_app_kit::NSWorkspace;
+use objc2_foundation::NSURL;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
@@ -172,4 +175,15 @@ pub(crate) fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Ve
             })
         })
         .collect()
+}
+
+pub fn open_settings() {
+    thread::spawn(move || {
+        NSWorkspace::new().openURL(&NSURL::fileURLWithPath(
+            &objc2_foundation::NSString::from_str(
+                &(std::env::var("HOME").unwrap_or("".to_string())
+                    + "/.config/rustcast/config.toml"),
+            ),
+        ));
+    });
 }

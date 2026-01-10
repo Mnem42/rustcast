@@ -1,5 +1,7 @@
 //! This module handles the logic for the new and view functions according to the elm
 //! architecture. If the subscription function becomes too large, it should be moved to this file
+
+use global_hotkey::hotkey::{Code, Modifiers};
 use iced::border::Radius;
 use iced::widget::scrollable::{Direction, Scrollbar};
 use iced::widget::text::LineHeight;
@@ -8,11 +10,18 @@ use iced::{Color, window};
 use iced::{Element, Task};
 use iced::{Length::Fill, widget::text_input};
 
-use objc2::MainThreadMarker;
-
 use rayon::{
     iter::{IntoParallelRefIterator, ParallelIterator},
     slice::ParallelSliceMut,
+};
+
+use crate::app::apps::AppCommand;
+use crate::config::Theme;
+use crate::{
+    app::{Message, Page, apps::App, default_settings, tile::Tile},
+    config::Config,
+    macos::{self, transform_process_to_ui_element},
+    utils::get_installed_apps,
 };
 
 pub fn default_app_paths() -> Vec<String> {
@@ -28,34 +37,22 @@ pub fn default_app_paths() -> Vec<String> {
     paths
 }
 
-use crate::app::apps::AppCommand;
-use crate::app::menubar::new_menu_icon;
-use crate::config::Theme;
-use crate::{
-    app::{Message, Page, apps::App, default_settings, tile::Tile},
-    config::Config,
-    macos::{self, transform_process_to_ui_element},
-    utils::get_installed_apps,
-};
-
 /// Initialise the base window
-pub fn new(keybind_id: u32, config: &Config) -> (Tile, Task<Message>) {
+pub fn new(
+    hotkey: (Option<Modifiers>, Code),
+    keybind_id: u32,
+    config: &Config,
+) -> (Tile, Task<Message>) {
     let (id, open) = window::open(default_settings());
 
     let open = open.discard().chain(window::run(id, |handle| {
         macos::macos_window_config(&handle.window_handle().expect("Unable to get window handle"));
-        // should work now that we have a window
         transform_process_to_ui_element();
     }));
 
     let store_icons = config.theme.show_icons;
 
     let paths = default_app_paths();
-
-    if config.show_trayicon {
-        let mtm = MainThreadMarker::new().unwrap();
-        new_menu_icon(mtm);
-    }
 
     let mut options: Vec<App> = paths
         .par_iter()
@@ -74,6 +71,7 @@ pub fn new(keybind_id: u32, config: &Config) -> (Tile, Task<Message>) {
             prev_query_lc: String::new(),
             results: vec![],
             options,
+            hotkey,
             visible: true,
             frontmost: None,
             focused: false,
@@ -81,6 +79,8 @@ pub fn new(keybind_id: u32, config: &Config) -> (Tile, Task<Message>) {
             theme: config.theme.to_owned().into(),
             open_hotkey_id: keybind_id,
             clipboard_content: vec![],
+            tray_icon: None,
+            sender: None,
             page: Page::Main,
         },
         Task::batch([open.map(|_| Message::OpenWindow)]),

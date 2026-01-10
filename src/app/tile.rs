@@ -8,11 +8,14 @@ use crate::app::{Message, Page};
 use crate::clipboard::ClipBoardContentType;
 use crate::commands::Function;
 use crate::config::Config;
+use crate::utils::open_settings;
 
 use arboard::Clipboard;
+use global_hotkey::hotkey::{Code, Modifiers};
 use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 
 use iced::futures::SinkExt;
+use iced::futures::channel::mpsc::{Sender, channel};
 use iced::window;
 use iced::{
     Element, Subscription, Task, Theme, futures,
@@ -23,10 +26,20 @@ use iced::{
 use objc2::rc::Retained;
 use objc2_app_kit::NSRunningApplication;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use tray_icon::TrayIcon;
 
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
+
+/// This is a wrapper around the sender to disable dropping
+#[derive(Clone, Debug)]
+pub struct ExtSender(pub Sender<Message>);
+
+/// Disable dropping the sender
+impl Drop for ExtSender {
+    fn drop(&mut self) {}
+}
 
 /// This is the base window, and its a "Tile"
 /// Its fields are:
@@ -43,7 +56,7 @@ use std::time::Duration;
 /// - Open Hotkey ID (`u32`) the id of the hotkey that opens the window
 /// - Clipboard Content (`Vec<`[`ClipBoardContentType`]`>`) all of the cliboard contents
 /// - Page ([`Page`]) the current page of the window (main or clipboard history)
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Tile {
     theme: iced::Theme,
     query: String,
@@ -56,14 +69,21 @@ pub struct Tile {
     frontmost: Option<Retained<NSRunningApplication>>,
     config: Config,
     open_hotkey_id: u32,
+    hotkey: (Option<Modifiers>, Code),
     clipboard_content: Vec<ClipBoardContentType>,
+    tray_icon: Option<TrayIcon>,
+    sender: Option<ExtSender>,
     page: Page,
 }
 
 impl Tile {
     /// Initialise the base window
-    pub fn new(keybind_id: u32, config: &Config) -> (Self, Task<Message>) {
-        elm::new(keybind_id, config)
+    pub fn new(
+        hotkey: (Option<Modifiers>, Code),
+        keybind_id: u32,
+        config: &Config,
+    ) -> (Self, Task<Message>) {
+        elm::new(hotkey, keybind_id, config)
     }
 
     /// This handles the iced's updates, which have all the variants of [Message]
@@ -96,22 +116,26 @@ impl Tile {
     pub fn subscription(&self) -> Subscription<Message> {
         Subscription::batch([
             Subscription::run(handle_hotkeys),
+            Subscription::run(handle_recipient),
             Subscription::run(handle_hot_reloading),
             Subscription::run(handle_clipboard_history),
             window::close_events().map(Message::HideWindow),
             keyboard::listen().filter_map(|event| {
                 if let keyboard::Event::KeyPressed { key, modifiers, .. } = event {
                     match key {
-                        keyboard::Key::Named(Named::Escape) => Some(Message::KeyPressed(65598)),
+                        keyboard::Key::Named(Named::Escape) => {
+                            return Some(Message::KeyPressed(65598));
+                        }
                         keyboard::Key::Character(chr) => {
                             if modifiers.command() && chr.to_string().to_lowercase() == "r" {
-                                Some(Message::ReloadConfig)
-                            } else {
-                                None
+                                return Some(Message::ReloadConfig);
+                            } else if modifiers.command() && chr.to_string() == "," {
+                                open_settings();
                             }
                         }
-                        _ => None,
+                        _ => {}
                     }
+                    None
                 } else {
                     None
                 }
@@ -281,6 +305,31 @@ fn handle_clipboard_history() -> impl futures::Stream<Item = Message> {
                 prev_byte_rep = byte_rep;
             }
             tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+}
+
+fn handle_recipient() -> impl futures::Stream<Item = Message> {
+    stream::channel(100, async |mut output| {
+        let (sender, mut recipient) = channel(100);
+        output
+            .send(Message::SetSender(ExtSender(sender)))
+            .await
+            .expect("Sender not sent");
+        loop {
+            let abcd = recipient
+                .try_next()
+                .map(async |msg| {
+                    if let Some(msg) = msg {
+                        output.send(msg).await.unwrap();
+                    }
+                })
+                .ok();
+
+            if let Some(abcd) = abcd {
+                abcd.await;
+            }
+            tokio::time::sleep(Duration::from_nanos(10)).await;
         }
     })
 }

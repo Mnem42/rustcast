@@ -40,10 +40,11 @@ fn main() -> iced::Result {
 
     let manager = GlobalHotKeyManager::new().unwrap();
 
-    let show_hide = HotKey::new(
-        Some(Modifiers::from_name(&config.toggle_mod).unwrap_or(Modifiers::ALT)),
-        config.toggle_key,
-    );
+    let modifier = Modifiers::from_name(&config.toggle_mod);
+
+    let key = config.toggle_key;
+
+    let show_hide = HotKey::new(modifier, key);
 
     // Hotkeys are stored as a vec so that hyperkey support can be added later
     let hotkeys = vec![show_hide];
@@ -53,7 +54,7 @@ fn main() -> iced::Result {
         .expect("Unable to register hotkey");
 
     iced::daemon(
-        move || Tile::new(show_hide.id(), &config),
+        move || Tile::new((modifier, key), show_hide.id(), &config),
         Tile::update,
         Tile::view,
     )

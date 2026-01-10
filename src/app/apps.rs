@@ -19,7 +19,7 @@ use crate::{
 
 /// This tells each "App" what to do when it is clicked, whether it is a function, a message, or a display
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum AppCommand {
     Function(Function),
     Message(Message),
@@ -31,13 +31,22 @@ pub enum AppCommand {
 /// This struct represents a command that rustcast can perform, providing the rustcast
 /// the data needed to search for the app, to display the app in search results, and to actually
 /// "run" the app.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct App {
     pub open_command: AppCommand,
     pub desc: String,
     pub icons: Option<iced::widget::image::Handle>,
     pub name: String,
     pub name_lc: String,
+}
+
+impl PartialEq for App {
+    fn eq(&self, other: &Self) -> bool {
+        self.name_lc == other.name_lc
+            && self.icons == other.icons
+            && self.desc == other.desc
+            && self.name == other.name
+    }
 }
 
 impl App {
