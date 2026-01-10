@@ -5,8 +5,8 @@ use image::{DynamicImage, ImageReader};
 use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
     menu::{
-        AboutMetadataBuilder, Icon as Ico, Menu, MenuEvent, MenuItem,
-        PredefinedMenuItem, accelerator::Accelerator,
+        AboutMetadataBuilder, Icon as Ico, Menu, MenuEvent, MenuItem, PredefinedMenuItem,
+        accelerator::Accelerator,
     },
 };
 
