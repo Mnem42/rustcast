@@ -3,6 +3,7 @@ use std::cmp::min;
 use std::fs;
 use std::time::Duration;
 
+use global_hotkey::hotkey::HotKey;
 use iced::Task;
 use iced::widget::operation;
 use iced::window;
@@ -16,6 +17,7 @@ use crate::app::WINDOW_WIDTH;
 use crate::app::apps::App;
 use crate::app::apps::AppCommand;
 use crate::app::default_settings;
+use crate::app::menubar::menu_icon;
 use crate::app::tile::elm::default_app_paths;
 use crate::calculator::Expression;
 use crate::commands::Function;
@@ -34,6 +36,16 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             tile.capture_frontmost();
             focus_this_app();
             tile.focused = true;
+            tile.visible = true;
+            Task::none()
+        }
+
+        Message::SetSender(sender) => {
+            tile.sender = Some(sender.clone());
+            let hotkey_id = HotKey::new(tile.hotkey.0, tile.hotkey.1).id();
+            if tile.config.show_trayicon {
+                tile.tray_icon = Some(menu_icon(tile.hotkey, hotkey_id, sender));
+            }
             Task::none()
         }
 

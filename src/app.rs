@@ -1,13 +1,12 @@
 //! Main logic for the app
-use crate::clipboard::ClipBoardContentType;
 use crate::commands::Function;
+use crate::{app::tile::ExtSender, clipboard::ClipBoardContentType};
 
 pub mod apps;
 pub mod menubar;
 pub mod tile;
 
 use iced::window::{self, Id, Settings};
-
 /// The default window width
 pub const WINDOW_WIDTH: f32 = 500.;
 
@@ -25,7 +24,7 @@ pub enum Page {
 }
 
 /// The message type that iced uses for actions that can do something
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Message {
     OpenWindow,
     SearchQueryChanged(String, Id),
@@ -37,6 +36,7 @@ pub enum Message {
     WindowFocusChanged(Id, bool),
     ClearSearchQuery,
     ReloadConfig,
+    SetSender(ExtSender),
     SwitchToPage(Page),
     ClipboardHistory(ClipBoardContentType),
 }
