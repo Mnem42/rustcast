@@ -46,12 +46,13 @@ pub fn menu_icon(hotkey: (Option<Modifiers>, Code), hotkey_id: u32, sender: ExtS
 }
 
 fn get_image() -> DynamicImage {
-    include_bytes!("../../docs/icon.png");
+    let image_path = if cfg!(debug_assertions) {
+        "docs/icon.png"
+    } else {
+        "/Applications/Rustcast.app/Contents/Resources/icon.png"
+    };
 
-    let image = ImageReader::open("docs/icon.png")
-        .unwrap()
-        .decode()
-        .unwrap();
+    let image = ImageReader::open(image_path).unwrap().decode().unwrap();
 
     image
 }
