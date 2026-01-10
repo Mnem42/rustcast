@@ -25,6 +25,7 @@ use crate::config::Config;
 use crate::haptics::HapticPattern;
 use crate::haptics::perform_haptic;
 use crate::utils::get_installed_apps;
+use crate::utils::is_valid_url;
 use crate::{
     app::{Message, Page, tile::Tile},
     macos::focus_this_app,
@@ -126,6 +127,14 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                     desc: RUSTCAST_DESC_NAME.to_string(),
                     icons: None,
                     name: res.eval().to_string(),
+                    name_lc: "".to_string(),
+                });
+            } else if tile.results.is_empty() && is_valid_url(&tile.query) {
+                tile.results.push(App {
+                    open_command: AppCommand::Function(Function::OpenWebsite(tile.query.clone())),
+                    desc: "Web Browsing".to_string(),
+                    icons: None,
+                    name: "Open Website: ".to_string() + &tile.query,
                     name_lc: "".to_string(),
                 });
             }

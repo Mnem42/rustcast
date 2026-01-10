@@ -52,9 +52,9 @@ fn get_image() -> DynamicImage {
         "/Applications/Rustcast.app/Contents/Resources/icon.png"
     };
 
-    let image = ImageReader::open(image_path).unwrap().decode().unwrap();
+    
 
-    image
+    ImageReader::open(image_path).unwrap().decode().unwrap()
 }
 
 fn init_event_handler(sender: ExtSender, hotkey_id: u32) {

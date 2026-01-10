@@ -13,6 +13,7 @@ use crate::{calculator::Expression, clipboard::ClipBoardContentType, config::Con
 pub enum Function {
     OpenApp(String),
     RunShellCommand(String, String),
+    OpenWebsite(String),
     RandomVar(i32), // Easter egg function
     CopyToClipboard(ClipBoardContentType),
     GoogleSearch(String),
@@ -58,6 +59,23 @@ impl Function {
                     NSWorkspace::new().openURL(
                         &NSURL::URLWithString_relativeToURL(
                             &objc2_foundation::NSString::from_str(&query),
+                            None,
+                        )
+                        .unwrap(),
+                    );
+                });
+            }
+
+            Function::OpenWebsite(url) => {
+                let open = if url.starts_with("http") {
+                    url.to_owned()
+                } else {
+                    format!("https://{}", url)
+                };
+                thread::spawn(move || {
+                    NSWorkspace::new().openURL(
+                        &NSURL::URLWithString_relativeToURL(
+                            &objc2_foundation::NSString::from_str(&open),
                             None,
                         )
                         .unwrap(),
