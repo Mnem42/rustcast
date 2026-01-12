@@ -2,23 +2,14 @@
 
 APP_BUNDLE_PATH="${APP_BUNDLE_PATH:?APP_BUNDLE_PATH not set}"
 
-# 1. Create a temporary keychain and import certificate
+# 1. Create temporary keychain and import certificate (same as before)
 KEYCHAIN=build.keychain-db
 
-if security list-keychains | grep -q "$KEYCHAIN"; then
-  echo "Keychain $KEYCHAIN already exists, using existing keychain."
-else
-  security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" "$KEYCHAIN"
-fi
-
-security default-keychain -s "$KEYCHAIN"
-security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" "$KEYCHAIN"
-security set-keychain-settings "$KEYCHAIN"
+security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" "$KEYCHAIN"
 security default-keychain -s "$KEYCHAIN"
 security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" "$KEYCHAIN"
 security set-keychain-settings "$KEYCHAIN"
 
-# Import certificate (Base64 encoded .p12 in secret MACOS_CERTIFICATE)
 echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
 security import certificate.p12 \
   -k "$KEYCHAIN" \
@@ -35,3 +26,23 @@ codesign --deep --force --options runtime --timestamp \
 
 codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE_PATH"
 echo "Signed app at $APP_BUNDLE_PATH"
+
+# 3. Notarization via App Store Connect API (recommended)
+if [[ -n "$MACOS_NOTARY_KEY_ID" ]]; then
+  echo "$MACOS_NOTARY_KEY" | base64 --decode > notary.key
+
+  xcrun notarytool store-credentials "ci-profile" \
+    --key notary.key \
+    --key-id "$MACOS_NOTARY_KEY_ID" \
+    --issuer "$MACOS_NOTARY_ISSUER_ID"
+
+  xcrun notarytool submit "$APP_BUNDLE_PATH" \
+    --key notary.key \
+    --key-id "$MACOS_NOTARY_KEY_ID" \
+    --issuer "$MACOS_NOTARY_ISSUER_ID" \
+    --team-id "$MACOS_NOTARY_TEAM_ID" \
+    --wait
+
+  xcrun stapler staple "$APP_BUNDLE_PATH"
+  echo "Notarized and stapled app."
+fi
