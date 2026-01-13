@@ -63,12 +63,12 @@ pub fn new(
         settings.position = Position::Specific(pos);
     }
 
-    
-
     #[cfg(target_os = "macos")]
     {
         let open = open.discard().chain(window::run(id, |handle| {
-            macos::macos_window_config(&handle.window_handle().expect("Unable to get window handle"));
+            macos::macos_window_config(
+                &handle.window_handle().expect("Unable to get window handle"),
+            );
             transform_process_to_ui_element();
         }));
     }
