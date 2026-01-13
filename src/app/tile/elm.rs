@@ -3,7 +3,7 @@
 
 use global_hotkey::hotkey::{Code, Modifiers};
 use iced::border::Radius;
-use iced::widget::scrollable::{Direction, Scrollbar};
+use iced::widget::scrollable::{Anchor, Direction, Scrollbar};
 use iced::widget::text::LineHeight;
 use iced::widget::{Column, Scrollable, container, space};
 use iced::{Color, window};
@@ -69,6 +69,7 @@ pub fn new(
             query: String::new(),
             query_lc: String::new(),
             prev_query_lc: String::new(),
+            focus_id: 0,
             results: vec![],
             options,
             hotkey,
@@ -111,15 +112,23 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
             .padding(20);
 
         let scrollbar_direction = if tile.config.theme.show_scroll_bar {
-            Direction::Vertical(Scrollbar::new().width(2).scroller_width(2))
+            let anchor = if tile.focus_id > 4 {
+                Anchor::End
+            } else {
+                Anchor::Start
+            };
+            Direction::Vertical(Scrollbar::new().width(2).scroller_width(2).anchor(anchor))
         } else {
             Direction::Vertical(Scrollbar::hidden())
         };
         let results = match tile.page {
             Page::Main => {
                 let mut search_results = Column::new();
+                let mut i = 0_u32;
                 for result in &tile.results {
-                    search_results = search_results.push(result.render(&tile.config.theme));
+                    search_results =
+                        search_results.push(result.render(&tile.config.theme, i, tile.focus_id));
+                    i += 1;
                 }
                 search_results
             }
