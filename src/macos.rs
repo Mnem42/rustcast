@@ -1,5 +1,5 @@
+//! Macos specific logic, such as window settings, etc.
 #![allow(deprecated)]
-
 use crate::app::App;
 use crate::commands::Function;
 use crate::config::Config;
@@ -25,6 +25,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
+/// This sets the activation policy of the app to Accessory, allowing rustcast to be visible ontop
+/// of fullscreen apps
 #[cfg(target_os = "macos")]
 pub fn set_activation_policy_accessory() {
     let mtm = MainThreadMarker::new().expect("must be on main thread");
@@ -32,6 +34,7 @@ pub fn set_activation_policy_accessory() {
     app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
 }
 
+/// This carries out the window configuration for the macos window (only things that are macos specific)
 #[cfg(target_os = "macos")]
 pub fn macos_window_config(handle: &WindowHandle) {
     match handle.as_raw() {
@@ -54,6 +57,8 @@ pub fn macos_window_config(handle: &WindowHandle) {
     }
 }
 
+/// This is the function that forces focus onto rustcast
+#[allow(deprecated)]
 #[cfg(target_os = "macos")]
 pub fn focus_this_app() {
     use objc2::MainThreadMarker;
@@ -65,24 +70,32 @@ pub fn focus_this_app() {
     app.activateIgnoringOtherApps(true);
 }
 
-// because objc2_application_services is mean and this type isn't public
+/// This is the struct that represents the process serial number, allowing us to transform the process to a UI element
 #[repr(C)]
 struct ProcessSerialNumber {
     low: u32,
     hi: u32,
 }
 
-/// see mostly https://github.com/electron/electron/blob/e181fd040f72becd135db1fa977622b81da21643/shell/browser/browser_mac.mm#L512C1-L532C2.
+/// This is the function that transforms the process to a UI element, and hides the dock icon
+///
+/// see mostly <https://github.com/electron/electron/blob/e181fd040f72becd135db1fa977622b81da21643/shell/browser/browser_mac.mm#L512C1-L532C2>
 ///
 /// returns ApplicationServices OSStatus (u32)
 ///
 /// doesn't seem to do anything if you haven't opened a window yet, so wait to call it until after that.
 #[cfg(target_os = "macos")]
 pub fn transform_process_to_ui_element() -> u32 {
+    use objc2_application_services::{
+        TransformProcessType, kCurrentProcess, kProcessTransformToUIElementApplication,
+    };
+    use std::ptr;
+
     let psn = ProcessSerialNumber {
         low: 0,
         hi: kCurrentProcess,
     };
+
     unsafe {
         TransformProcessType(
             ptr::from_ref(&psn).cast(),

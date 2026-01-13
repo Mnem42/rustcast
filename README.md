@@ -4,11 +4,11 @@
 > search bar that people can use to do many things, like opening apps,
 > calculators, quick-notes, etc.
 
-![RustCast Demo PreRelease V1](docs/rustcast-demo-with-v0_1_0.png)
+![RustCast Demo PreRelease V1](./docs/rustcast-v0-3-4.png)
 
 ## Installation:
 
-### Via Homebrew (Recommended):
+### Via Homebrew:
 
 > Requires Homebrew
 
@@ -24,9 +24,10 @@ use spotlight :) Have fun!)
 
 1. Go to the
    [releases page](https://github.com/unsecretised/rustcast/releases/latest)
-2. Download the `.zip` file
-3. Open it, and if there is a "this app is damaged", run the command
-   `xattr -cr <RustCast.app directory here>`
+2. Download the `.zip` file or `.dmg` file
+3. If `.dmg` file, open it and drag the `RustCast.app` to your `/Applications/`
+   (you should be guided)
+4. If `.zip` file, extract the `RustCast.app` to your `/Applications/`
 
 ### Build it youself:
 
@@ -54,17 +55,13 @@ bit wonky, and will be fixed in the upcoming releases
 
 ### Planned:
 
-- [ ] Select the options using arrow keys 13/12/2025
-- [ ] Calculator 15/12/2025
-- [ ] Popup note-taking 18/12/2025
-- [ ] Clipboard History 20/12/2025
-- [ ] Plugin Support 31/12/2025 (Partially implemented on 15/12/2025)
-- [ ] Blur / transparent background (Partially implemented on 13/12/2025)
-- [ ] Allow variables to be passed into custom shell scripts.
+- [ ] Select the options using arrow keys
+- [ ] Popup note-taking
+- [ ] Plugin Support (Partially implemented on 15/12/2025)
 - [ ] Hyperkey - Map CMD + OPT + CTRL + SHIFT to a physical key
 - [ ] Ability to pick between tabs in firefox / chromium browsers - using
       [Puppeteer](https://pptr.dev/)
-- [ ] Cross platform support - (1/2/2026)
+- [ ] Cross platform support
 
 ### Finished:
 
@@ -77,13 +74,19 @@ bit wonky, and will be fixed in the upcoming releases
 - [x] Customisable themes (13/12/2025)
   - [x] Configurable colours
 - [x] Spotify control - Ability to control spotify via the app
+- [x] Allow variables to be passed into custom shell scripts.
 - [x] Google your query. Simply type your query, and then put a `?` at the end,
       and press enter
+- [x] Calculator (27/12/2025)
+- [x] Clipboard History (29/12/2025) This works by typing `cbhist` to enter the
+      cliboard history page, which allows u to access your clipboard history,
+- [x] Blur / transparent background (7/1/2026) and then use `main` to switch
+      back, or just open an close the app again
+- [x] Tray icons (8/1/2026)
 
-### Not Planned:
+## If you like rustcast, consider starring it on github :)
 
-- [ ] Tray Icon for quitting the app. One may ask why? Well, because I CAN'T GET
-      IT TO WORK.. I've SPENT TOO LONG ON THIS
+[![Star History Chart](https://api.star-history.com/svg?repos=unsecretised/rustcast&type=date&legend=top-left)](https://www.star-history.com/#unsecretised/rustcast&type=date&legend=top-left)
 
 ## Motivations:
 

@@ -1,3 +1,4 @@
+//! Main logic for the app
 use crate::commands::Function;
 use crate::config::Config;
 use crate::utils::{get_config_file_path, get_installed_apps, read_config_file};
@@ -39,85 +40,30 @@ use rayon::slice::ParallelSliceMut;
 use std::cmp::min;
 use std::fs;
 use std::time::Duration;
+use crate::{app::tile::ExtSender, clipboard::ClipBoardContentType};
 
+pub mod apps;
+pub mod menubar;
+pub mod tile;
+
+use iced::window::{self, Id, Settings};
+/// The default window width
 pub const WINDOW_WIDTH: f32 = 500.;
+
+/// The default window height
 pub const DEFAULT_WINDOW_HEIGHT: f32 = 65.;
 
-#[derive(Debug, Clone)]
-pub struct App {
-    pub open_command: Function,
-    pub icons: Option<iced::widget::image::Handle>,
-    pub name: String,
-    pub name_lc: String,
+/// The rustcast descriptor name to be put for all rustcast commands
+pub const RUSTCAST_DESC_NAME: &str = "RustCast";
+
+/// The different pages that rustcast can have / has
+#[derive(Debug, Clone, PartialEq)]
+pub enum Page {
+    Main,
+    ClipboardHistory,
 }
 
-impl App {
-    pub fn basic_apps() -> Vec<App> {
-        vec![
-            App {
-                open_command: Function::Quit,
-                icons: None,
-                name: "Quit RustCast".to_string(),
-                name_lc: "quit".to_string(),
-            },
-            App {
-                open_command: Function::OpenPrefPane,
-                icons: None,
-                name: "Open RustCast Preferences".to_string(),
-                name_lc: "settings".to_string(),
-            },
-        ]
-    }
-    pub fn render(&self, show_icons: bool) -> impl Into<iced::Element<'_, Message>> {
-        let mut tile = Row::new().width(Fill).height(55);
-
-        if show_icons {
-            if let Some(icon) = &self.icons {
-                tile = tile
-                    .push(Viewer::new(icon).height(35).width(35))
-                    .align_y(Alignment::Center);
-            } else {
-                tile = tile
-                    .push(space().height(Fill))
-                    .width(55)
-                    .height(55)
-                    .align_y(Alignment::Center);
-            }
-        }
-
-        tile = tile
-            .push(
-                Button::new(
-                    Text::new(self.name.clone())
-                        .height(Fill)
-                        .width(Fill)
-                        .align_y(Vertical::Center),
-                )
-                .on_press(Message::RunFunction(self.open_command.clone()))
-                .style(|_, _| iced::widget::button::Style {
-                    background: Some(iced::Background::Color(
-                        Theme::KanagawaDragon.palette().background,
-                    )),
-                    text_color: Theme::KanagawaDragon.palette().text,
-                    ..Default::default()
-                })
-                .width(Fill)
-                .height(55),
-            )
-            .width(Fill);
-        container(tile)
-            .style(|_| iced::widget::container::Style {
-                text_color: Some(Theme::KanagawaDragon.palette().text),
-                background: Some(iced::Background::Color(
-                    Theme::KanagawaDragon.palette().background,
-                )),
-                ..Default::default()
-            })
-            .width(Fill)
-            .height(Fill)
-    }
-}
-
+/// The message type that iced uses for actions that can do something
 #[derive(Debug, Clone)]
 pub enum Message {
     OpenWindow,
@@ -125,13 +71,17 @@ pub enum Message {
     KeyPressed(u32),
     HideWindow(Id),
     RunFunction(Function),
+    ReturnFocus,
     ClearSearchResults,
     WindowFocusChanged(Id, bool),
     ClearSearchQuery,
     ReloadConfig,
-    _Nothing,
+    SetSender(ExtSender),
+    SwitchToPage(Page),
+    ClipboardHistory(ClipBoardContentType),
 }
 
+/// The window settings for rustcast
 pub fn default_settings() -> Settings {
     Settings {
         resizable: false,

@@ -1,26 +1,17 @@
 name: Build macOS Release
-
 on:
   push:
     tags:
       - "v*"
   workflow_dispatch:
-
 permissions:
   contents: write
 
 jobs:
   build-macos:
-    strategy:
-      matrix:
-        include:
-          - target: aarch64-apple-darwin
-            os: macos-14
-          - target: x86_64-apple-darwin
-            os: macos-14
-
-    runs-on: ${{ matrix.os }}
-
+    runs-on: macos-14
+    env:
+      APP_VERSION: ${{ github.ref_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,10 +19,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
-
-      - name: Install cargo-bundle
-        run: cargo install cargo-bundle
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -49,23 +37,53 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-universal-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build release binary
-        run: cargo bundle --release --target ${{ matrix.target }}
+      - name: Build macOS app (universal)
+        run: bash scripts/build-macos.sh
 
+      - name: Sign macOS app
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          MACOS_CERTIFICATE_NAME: ${{ secrets.MACOS_CERTIFICATE_NAME }}
+          MACOS_CI_KEYCHAIN_PWD: ${{ secrets.MACOS_CI_KEYCHAIN_PWD }}
+        run: bash scripts/sign-macos.sh
+
+      - name: Package DMG
+        run: bash scripts/package-macos.sh
+        env:
+          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          MACOS_NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+
+
+      # Homebrew-style artifact from the built .app
       - name: Create artifacts directory
         run: mkdir -p artifacts
 
-      - name: Package app bundle
+      - name: Zip universal .app for Homebrew
+        # APP_BUNDLE_PATH is set by scripts/build-macos.sh
         run: |
-          cd target/${{ matrix.target }}/release/bundle/osx
-          zip -r ../../../../../artifacts/rustcast-${{ matrix.target }}.app.zip *.app
+          if [ -z "$APP_BUNDLE_PATH" ]; then
+            echo "APP_BUNDLE_PATH not set by build-macos.sh" >&2
+            exit 1
+          fi
+          APP_NAME=$(basename "$APP_BUNDLE_PATH")
+          zip -r "artifacts/${APP_NAME%.app}-universal-macos.app.zip" "$APP_BUNDLE_PATH"
 
-      - name: Upload artifacts
+      - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ matrix.target }}
+          name: rustcast-macos-dmg
+          path: ${{ env.DMG_PATH }}
+          retention-days: 7
+
+      - name: Upload .app zip artifact (Homebrew)
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-bundles
           path: artifacts/*.zip
           retention-days: 7
 
@@ -73,7 +91,6 @@ jobs:
     needs: build-macos
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -83,7 +100,10 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/**/*.zip
+          # Include both DMG and .app zip(s)
+          files: |
+            artifacts/**/*.dmg
+            artifacts/**/*.zip
           draft: false
           prerelease: false
         env:

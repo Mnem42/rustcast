@@ -20,3 +20,34 @@ For bug fixes, and helping people to solve their github issues: see
 1. Code must compile...
 1. A video recording / screenshot would be an added bonus in getting your pull
    request merged faster.
+
+## Codebase:
+
+```
+.
+├── bundling # Bundling related stuff, ignore for the most bit
+│   ├── entitlements.plist
+│   ├── icon.icns
+│   └── Info.plist
+├── docs # Website and documentation related stuff. If something new is added to config, then modify this as well before PR-ing
+├── Cargo.lock 
+├── Cargo.toml
+├── CONTRIBUTING.md # Contributing guidelines and codebase structure
+├── EXTENSIONS.md   # Discussions about extensions implementation
+├── LICENSE.md      # License file
+├── README.md       # Readme file
+└── src
+    ├── app
+    │   ├── apps.rs         # Logic for the "apps" / commands that rustcast can perform
+    │   ├── tile            # Logic for the tile (rustcast window)
+    │   │   ├── elm.rs      # Logic for the elm architecture of the rustcast window (New and View)
+    │   │   └── update.rs   # Logic for the updating (elm architecture update) of the rustcast window
+    │   └── tile.rs
+    ├── calculator.rs       # Calculator logic 
+    ├── commands.rs         # Logic for different commands
+    ├── clipboard.rs        # Logic for the clipboard history feature of rustcast
+    ├── config.rs           # Configuration related stuff
+    ├── macos.rs            # Macos specific config
+    ├── main.rs             # Start app
+    └── utils.rs            # Common functions that are used across files
+```

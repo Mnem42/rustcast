@@ -1,4 +1,6 @@
-use std::process::Command;
+//! This handles all the different commands that rustcast can perform, such as opening apps,
+//! copying to clipboard, etc.
+use std::{process::Command, thread};
 
 use arboard::Clipboard;
 #[cfg(target_os = "macos")]
@@ -6,30 +8,38 @@ use objc2_app_kit::NSWorkspace;
 #[cfg(target_os = "macos")]
 use objc2_foundation::NSURL;
 
-use crate::config::Config;
 use crate::utils::{get_config_file_path, open_application};
+use crate::{calculator::Expression, clipboard::ClipBoardContentType, config::Config};
 
-#[derive(Debug, Clone)]
+/// The different functions that rustcast can perform
+#[derive(Debug, Clone, PartialEq)]
 pub enum Function {
     OpenApp(String),
-    RunShellCommand(Vec<String>),
-    RandomVar(i32),
+    RunShellCommand(String, String),
+    OpenWebsite(String),
+    RandomVar(i32), // Easter egg function
+    CopyToClipboard(ClipBoardContentType),
     GoogleSearch(String),
+    Calculate(Expression),
     OpenPrefPane,
     Quit,
 }
 
 impl Function {
-    pub fn execute(&self, config: &Config) {
+    /// Run the command
+    pub fn execute(&self, config: &Config, query: &str) {
         match self {
             Function::OpenApp(path) => {
                 open_application(path);
             }
-            Function::RunShellCommand(shell_command) => {
+            Function::RunShellCommand(command, alias) => {
+                let query = query.to_string();
+                let final_command =
+                    format!(r#"{} {}"#, command, query.strip_prefix(alias).unwrap_or(""));
                 Command::new("sh")
                     .arg("-c")
-                    .arg(shell_command.join(" "))
-                    .status()
+                    .arg(final_command.trim())
+                    .spawn()
                     .ok();
             }
             Function::RandomVar(var) => {
@@ -57,18 +67,59 @@ impl Function {
                     NSWorkspace::new().openURL(
                         &NSURL::URLWithString_relativeToURL(
                             &objc2_foundation::NSString::from_str(query),
+                        &NSURL::URLWithString_relativeToURL(
+                            &objc2_foundation::NSString::from_str(&query),
                             None,
                         )
                         .unwrap(),
                     );
-                }
+                });
             }
 
+            Function::OpenWebsite(url) => {
+                let open = if url.starts_with("http") {
+                    url.to_owned()
+                } else {
+                    format!("https://{}", url)
+                };
+                #[cfg(os= "macos")]
+                thread::spawn(move || {
+                    NSWorkspace::new().openURL(
+                        &NSURL::URLWithString_relativeToURL(
+                            &objc2_foundation::NSString::from_str(&open),
+                            None,
+                        )
+                        .unwrap(),
+                    );
+                });
+            }
+
+            Function::Calculate(expr) => {
+                Clipboard::new()
+                    .unwrap()
+                    .set_text(expr.eval().to_string())
+                    .unwrap_or(());
+            }
+
+            Function::CopyToClipboard(clipboard_content) => match clipboard_content {
+                ClipBoardContentType::Text(text) => {
+                    Clipboard::new().unwrap().set_text(text).ok();
+                }
+                ClipBoardContentType::Image(img) => {
+                    Clipboard::new().unwrap().set_image(img.to_owned_img()).ok();
+                }
+            },
+
             Function::OpenPrefPane => {
-                Command::new("open")
-                    .arg(get_config_file_path())
-                    .spawn()
-                    .ok();
+                #[cfg(os="macos")]
+                thread::spawn(move || {
+                    NSWorkspace::new().openURL(&NSURL::fileURLWithPath(
+                        &objc2_foundation::NSString::from_str(
+                            &(std::env::var("HOME").unwrap_or("".to_string())
+                                + "/.config/rustcast/config.toml"),
+                        ),
+                    ));
+                });
             }
             Function::Quit => std::process::exit(0),
         }
