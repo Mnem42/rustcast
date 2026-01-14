@@ -5,7 +5,6 @@ use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
-use global_hotkey::hotkey::HotKey;
 use iced::Task;
 use iced::widget::image::Handle;
 use iced::widget::operation;
@@ -57,9 +56,8 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
 
         Message::SetSender(sender) => {
             tile.sender = Some(sender.clone());
-            let hotkey_id = HotKey::new(tile.hotkey.0, tile.hotkey.1).id();
             if tile.config.show_trayicon {
-                tile.tray_icon = Some(menu_icon(tile.hotkey, hotkey_id, sender));
+                tile.tray_icon = Some(menu_icon(tile.hotkey, sender));
             }
             Task::none()
         }
@@ -271,7 +269,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
         }
 
         Message::KeyPressed(hk_id) => {
-            if hk_id == tile.open_hotkey_id {
+            if hk_id == tile.hotkey.id {
                 tile.visible = !tile.visible;
                 if tile.visible {
                     Task::chain(

@@ -1,7 +1,7 @@
 //! This module handles the logic for the new and view functions according to the elm
 //! architecture. If the subscription function becomes too large, it should be moved to this file
 
-use global_hotkey::hotkey::{Code, Modifiers};
+use global_hotkey::hotkey::HotKey;
 use iced::border::Radius;
 use iced::widget::scrollable::{Anchor, Direction, Scrollbar};
 use iced::widget::text::LineHeight;
@@ -38,11 +38,7 @@ pub fn default_app_paths() -> Vec<String> {
 }
 
 /// Initialise the base window
-pub fn new(
-    hotkey: (Option<Modifiers>, Code),
-    keybind_id: u32,
-    config: &Config,
-) -> (Tile, Task<Message>) {
+pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
     let (id, open) = window::open(default_settings());
 
     let open = open.discard().chain(window::run(id, |handle| {
@@ -78,7 +74,6 @@ pub fn new(
             focused: false,
             config: config.clone(),
             theme: config.theme.to_owned().into(),
-            open_hotkey_id: keybind_id,
             clipboard_content: vec![],
             tray_icon: None,
             sender: None,

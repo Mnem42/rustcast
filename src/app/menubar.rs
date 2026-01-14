@@ -1,6 +1,6 @@
 //! This has the menubar icon logic for the app
 
-use global_hotkey::{hotkey::Code, hotkey::Modifiers};
+use global_hotkey::hotkey::{Code, HotKey, Modifiers};
 use image::{DynamicImage, ImageReader};
 use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
@@ -18,13 +18,13 @@ use crate::{
 use tokio::runtime::Runtime;
 
 /// This create a new menubar icon for the app
-pub fn menu_icon(hotkey: (Option<Modifiers>, Code), hotkey_id: u32, sender: ExtSender) -> TrayIcon {
+pub fn menu_icon(hotkey: HotKey, sender: ExtSender) -> TrayIcon {
     let builder = TrayIconBuilder::new();
 
     let image = get_image();
     let icon = Icon::from_rgba(image.as_bytes().to_vec(), image.width(), image.height()).unwrap();
 
-    init_event_handler(sender, hotkey_id);
+    init_event_handler(sender, hotkey.id());
 
     let menu = Menu::with_items(&[
         &version_item(),
@@ -110,12 +110,12 @@ fn hide_tray_icon() -> MenuItem {
     MenuItem::with_id("hide_tray_icon", "Hide Tray Icon", true, None)
 }
 
-fn open_item(hotkey: (Option<Modifiers>, Code)) -> MenuItem {
+fn open_item(hotkey: HotKey) -> MenuItem {
     MenuItem::with_id(
         "show_rustcast",
         "Toggle View",
         true,
-        Some(Accelerator::new(hotkey.0, hotkey.1)),
+        Some(Accelerator::new(Some(hotkey.mods), hotkey.key)),
     )
 }
 
