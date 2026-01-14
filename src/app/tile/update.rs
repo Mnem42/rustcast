@@ -2,6 +2,7 @@
 use std::cmp::min;
 use std::fs;
 use std::path::Path;
+use std::thread;
 use std::time::Duration;
 
 use global_hotkey::hotkey::HotKey;
@@ -42,6 +43,14 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             focus_this_app();
             tile.focused = true;
             tile.visible = true;
+            Task::none()
+        }
+        Message::HideTrayIcon => {
+            tile.tray_icon = None;
+            tile.config.show_trayicon = false;
+            let home = std::env::var("HOME").unwrap();
+            let confg_str = toml::to_string(&tile.config).unwrap();
+            thread::spawn(move || fs::write(home + "/.config/rustcast/config.toml", confg_str));
             Task::none()
         }
 

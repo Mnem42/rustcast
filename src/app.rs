@@ -52,6 +52,7 @@ pub enum Message {
     ClearSearchResults,
     WindowFocusChanged(Id, bool),
     ClearSearchQuery,
+    HideTrayIcon,
     ReloadConfig,
     SetSender(ExtSender),
     SwitchToPage(Page),
