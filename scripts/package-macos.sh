@@ -36,7 +36,7 @@ if [[ -n "$MACOS_NOTARY_KEY_ID" ]]; then
     --wait 
 
   echo "Waiting for ticket propagation..."
-  sleep 30
+#   sleep 30
 
   xcrun stapler staple "$DMG_PATH"
 
