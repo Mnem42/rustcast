@@ -75,7 +75,7 @@ impl Function {
             }
 
             Function::OpenWebsite(url) => {
-                let _ = if url.starts_with("http") {
+                let open_url = if url.starts_with("http") {
                     url.to_owned()
                 } else {
                     format!("https://{}", url)
@@ -84,7 +84,7 @@ impl Function {
                 thread::spawn(move || {
                     NSWorkspace::new().openURL(
                         &NSURL::URLWithString_relativeToURL(
-                            &objc2_foundation::NSString::from_str(&open),
+                            &objc2_foundation::NSString::from_str(&open_url),
                             None,
                         )
                         .unwrap(),

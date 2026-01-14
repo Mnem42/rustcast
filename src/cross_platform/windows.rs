@@ -1,8 +1,18 @@
 use {
-    crate::app::apps::App, windows::{Win32::{System::Com::CoTaskMemFree, UI::{Shell::{
-        FOLDERID_LocalAppData, FOLDERID_ProgramFiles, FOLDERID_ProgramFilesX86, KF_FLAG_DEFAULT,
-        SHGetKnownFolderPath,
-    }, WindowsAndMessaging::GetCursorPos}}, core::GUID}
+    crate::app::apps::App,
+    windows::{
+        Win32::{
+            System::Com::CoTaskMemFree,
+            UI::{
+                Shell::{
+                    FOLDERID_LocalAppData, FOLDERID_ProgramFiles, FOLDERID_ProgramFilesX86,
+                    KF_FLAG_DEFAULT, SHGetKnownFolderPath,
+                },
+                WindowsAndMessaging::GetCursorPos,
+            },
+        },
+        core::GUID,
+    },
 };
 
 fn get_apps_from_registry(apps: &mut Vec<App>) {
@@ -52,7 +62,7 @@ fn get_apps_from_registry(apps: &mut Vec<App>) {
                     name: display_name.clone().into_string().unwrap(),
                     name_lc: display_name.clone().into_string().unwrap().to_lowercase(),
                     icons: None,
-                    desc: "TODO: Implement".to_string()
+                    desc: "TODO: Implement".to_string(),
                 })
             }
         });
@@ -73,7 +83,9 @@ fn get_apps_from_known_folder(apps: &mut Vec<App>) {
             use crate::{app::apps::AppCommand, commands::Function};
 
             apps.push(App {
-                open_command: AppCommand::Function(Function::OpenApp(entry.path().to_string_lossy().to_string())),
+                open_command: AppCommand::Function(Function::OpenApp(
+                    entry.path().to_string_lossy().to_string(),
+                )),
                 name: entry
                     .clone()
                     .file_name()
@@ -88,7 +100,7 @@ fn get_apps_from_known_folder(apps: &mut Vec<App>) {
                     .to_lowercase()
                     .replace(".exe", ""),
                 icons: None,
-                desc: "TODO: Implement".to_string()
+                desc: "TODO: Implement".to_string(),
             });
         }
     }

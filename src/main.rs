@@ -19,9 +19,7 @@ use global_hotkey::{
 
 fn main() -> iced::Result {
     #[cfg(target_os = "macos")]
-    {
-        macos::set_activation_policy_accessory();
-    }
+    cross_platform::macos::set_activation_policy_accessory();
 
     let file_path = get_config_file_path();
     let config = read_config_file(&file_path).unwrap();
@@ -41,8 +39,6 @@ fn main() -> iced::Result {
     manager
         .register_all(&hotkeys)
         .expect("Unable to register hotkey");
-
-    println!("Starting");
 
     iced::daemon(
         move || Tile::new((modifier, key), show_hide.id(), &config),

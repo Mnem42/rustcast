@@ -1,10 +1,14 @@
 //! This handles the update logic for the tile (AKA rustcast's main window)
 use std::cmp::min;
 use std::fs;
+#[cfg(target_os = "macos")]
+use std::path::Path;
 use std::time::Duration;
 
 use global_hotkey::hotkey::HotKey;
 use iced::Task;
+#[cfg(target_os = "macos")]
+use iced::widget::image::Handle;
 use iced::widget::operation;
 use iced::window;
 use rayon::slice::ParallelSliceMut;
@@ -21,18 +25,15 @@ use crate::calculator::Expression;
 use crate::commands::Function;
 use crate::config::Config;
 
+use crate::app::{Message, Page, tile::Tile};
 #[cfg(target_os = "windows")]
 use crate::utils::get_config_installation_dir;
 use crate::utils::get_installed_apps;
-use crate::{
-    app::{Message, Page, tile::Tile},
-};
 
 #[cfg(target_os = "macos")]
 use crate::{
-    macos::focus_this_app,
-    haptics::HapticPattern,
-    haptics::perform_haptic
+    cross_platform::macos::focus_this_app,
+    cross_platform::macos::haptics::{HapticPattern, perform_haptic},
 };
 
 pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
@@ -136,7 +137,9 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                     name: res.eval().to_string(),
                     name_lc: "".to_string(),
                 });
-            } else if let Err(_) = Url::parse(&tile.query) && tile.results.is_empty() {
+            } else if let Err(_) = Url::parse(&tile.query)
+                && tile.results.is_empty()
+            {
                 #[cfg(target_os = "macos")]
                 tile.results.push(App {
                     open_command: AppCommand::Function(Function::OpenWebsite(tile.query.clone())),
@@ -218,10 +221,8 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
 
             #[cfg(target_os = "windows")]
             let new_config: Config = toml::from_str(
-                &fs::read_to_string(
-                    get_config_installation_dir() + "/rustcast/config.toml",
-                )
-                .unwrap_or("".to_owned()),
+                &fs::read_to_string(get_config_installation_dir() + "/rustcast/config.toml")
+                    .unwrap_or("".to_owned()),
             )
             .unwrap();
 
@@ -246,9 +247,9 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                     {
                         // get normal settings and modify position
 
-                        use iced::window::Position;
                         use crate::cross_platform::windows::open_on_focused_monitor;
-                        
+                        use iced::window::Position;
+
                         let pos = open_on_focused_monitor();
                         let mut settings = default_settings();
                         settings.position = Position::Specific(pos);

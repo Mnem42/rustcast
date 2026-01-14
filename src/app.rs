@@ -2,7 +2,6 @@
 use crate::commands::Function;
 use iced::window::{self, Id, Settings};
 
-
 use crate::{app::tile::ExtSender, clipboard::ClipBoardContentType};
 
 pub mod apps;
