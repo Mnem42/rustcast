@@ -18,8 +18,6 @@ clear_on_enter = true
 # The URL should have a %s to mark where the search arguments will go
 search_url = "https://google.com/search?q=%s"
 
-# As long as the font is installed, you can use it using the exact name (Check in the fontbook app)
-font = "Fira Code"
 
 # Get haptic feedback when typing in the search bar
 haptic_feedback = true
@@ -30,13 +28,25 @@ show_trayicon = true
 
 [theme]
 
-text_color = [0.95, 0.95, 0.96]
+# As long as the font is installed, you can use it using the exact name (Check in the fontbook app)
+font = "Fira Code"
+
+#the color for the text in rgb format
+text_color = [0.95, 0.95, 0.96] 
+
+#the background color in rgb format
 background_color = [0.11, 0.11, 0.13]
 
+# the background opacity
 background_opacity = 1.0
 
+# if the background should be blurred (not supported right now)
 blur = false
+
+# if the icons should be shown
 show_icons = true
+
+# if the scroll bar should be shown
 show_scroll_bar = true
 
 # searching for `echo abcd > file.txt` will run `echo abcd > file.txt` as the shell command

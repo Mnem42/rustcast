@@ -41,21 +41,21 @@ use spotlight :) Have fun!)
 
 ## Config:
 
-> I have a high chance of gorfetting (forgetting) to update the config docs, but
-> even if I do, you will most likely be able to find my config easily
+> I have a high chance of forgetting to update the config docs, but
+> even if I do, you will most likely be able to find my config and a list of the
+> latest config options easily
 > [here](https://github.com/unsecretised/rustcast-dotfiles)
 
 The config file should be located at: `~/.config/rustcast/config.toml` RustCast
-doesn't create the default configuration for you, but it does use its
+creates the default configuration for you, but it does use its
 [default options](docs/default.toml) Here's a full list of what all you can
-configure [The list](docs/config.toml) The blurring and background is still a
+configure [The list](docs/config.toml) The blurring is still a
 bit wonky, and will be fixed in the upcoming releases
 
 ## Feature list:
 
 ### Planned:
 
-- [ ] Select the options using arrow keys
 - [ ] Popup note-taking
 - [ ] Plugin Support (Partially implemented on 15/12/2025)
 - [ ] Hyperkey - Map CMD + OPT + CTRL + SHIFT to a physical key
@@ -82,6 +82,7 @@ bit wonky, and will be fixed in the upcoming releases
       cliboard history page, which allows u to access your clipboard history,
 - [x] Blur / transparent background (7/1/2026) and then use `main` to switch
       back, or just open an close the app again
+- [x] Select the options using arrow keys
 - [x] Tray icons (8/1/2026)
 
 ## If you like rustcast, consider starring it on github :)
