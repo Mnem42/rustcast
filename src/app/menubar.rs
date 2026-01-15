@@ -88,7 +88,7 @@ fn init_event_handler(sender: ExtSender, hotkey_id: u32) {
                 });
             }
             "open_help_page" => {
-                open_url("https://github.com/unsecretised/rustcast/discussions");
+                open_url("https://github.com/unsecretised/rustcast/discussions/new?category=q-a");
             }
             "open_preferences" => {
                 open_settings();
