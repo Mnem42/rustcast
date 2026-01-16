@@ -3,7 +3,7 @@
 
 use global_hotkey::hotkey::HotKey;
 use iced::border::Radius;
-use iced::widget::scrollable::{Direction, Scrollbar};
+use iced::widget::scrollable::{Anchor, Direction, Scrollbar};
 use iced::widget::text::LineHeight;
 use iced::widget::{Column, Scrollable, container, space};
 use iced::{Color, window};
