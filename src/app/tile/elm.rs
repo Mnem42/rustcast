@@ -47,7 +47,7 @@ pub fn default_app_paths() -> Vec<String> {
 pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
     #[allow(unused_mut)]
     let mut settings = default_settings();
-    
+
     // get normal settings and modify position
     #[cfg(target_os = "windows")]
     {
