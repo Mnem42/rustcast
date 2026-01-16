@@ -247,7 +247,15 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 open_command: AppCommand::Function(func),
                 ..
             }) => Task::done(Message::RunFunction(func.to_owned())),
-            Some(_) | None => Task::none(),
+            Some(App {
+                open_command: AppCommand::Message(msg),
+                ..
+            }) => Task::done(msg.to_owned()),
+            Some(App {
+                open_command: AppCommand::Display,
+                ..
+            }) => Task::done(Message::ReturnFocus),
+            None => Task::none(),
         },
 
         Message::ReloadConfig => {
