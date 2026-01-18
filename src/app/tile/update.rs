@@ -63,6 +63,17 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             Task::none()
         }
 
+        Message::EscKeyPressed(id) => {
+            if tile.query_lc.is_empty() {
+                Task::done(Message::HideWindow(id))
+            } else {
+                Task::batch(vec![
+                    Task::done(Message::ClearSearchQuery),
+                    Task::done(Message::ClearSearchResults),
+                ])
+            }
+        }
+
         Message::SearchQueryChanged(input, id) => {
             tile.focus_id = 0;
             #[cfg(target_os = "macos")]

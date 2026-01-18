@@ -15,12 +15,12 @@ use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 
 use iced::futures::SinkExt;
 use iced::futures::channel::mpsc::{Sender, channel};
-use iced::window;
 use iced::{
     Element, Subscription, Task, Theme, futures,
     keyboard::{self, key::Named},
     stream,
 };
+use iced::{event, window};
 
 use objc2::rc::Retained;
 use objc2_app_kit::NSRunningApplication;
@@ -136,8 +136,18 @@ impl Tile {
     /// - Keypresses (escape to close the window)
     /// - Window focus changes
     pub fn subscription(&self) -> Subscription<Message> {
+        let keyboard = event::listen_with(|event, _, id| match event {
+            event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) => match key {
+                keyboard::Key::Named(keyboard::key::Named::Escape) => {
+                    Some(Message::EscKeyPressed(id))
+                }
+                _ => None,
+            },
+            _ => None,
+        });
         Subscription::batch([
             Subscription::run(handle_hotkeys),
+            keyboard,
             Subscription::run(handle_recipient),
             Subscription::run(handle_hot_reloading),
             Subscription::run(handle_clipboard_history),

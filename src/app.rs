@@ -51,6 +51,7 @@ pub enum Message {
     RunFunction(Function),
     OpenFocused,
     ReturnFocus,
+    EscKeyPressed(Id),
     ClearSearchResults,
     WindowFocusChanged(Id, bool),
     ClearSearchQuery,
