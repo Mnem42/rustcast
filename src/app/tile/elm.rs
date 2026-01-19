@@ -16,8 +16,7 @@ use rayon::{
 };
 
 use crate::app::tile::AppIndex;
-use crate::config::Theme;
-use crate::styles::rustcast_text_input_style;
+use crate::styles::{contents_style, rustcast_text_input_style};
 use crate::{
     app::{Message, Page, apps::App, default_settings, tile::Tile},
     config::Config,
@@ -124,7 +123,6 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
                 app.clone()
                     .render(tile.config.theme.clone(), i as u32, tile.focus_id)
             }))
-            .spacing(if tile.results.is_empty() { 0 } else { 1 })
         };
 
         let scrollable = Scrollable::with_direction(results, scrollbar_direction).id("results");
@@ -135,32 +133,15 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
                 border: iced::Border {
                     color: Color::WHITE,
                     width: 1.,
-                    radius: Radius::new(14),
+                    radius: Radius::new(5),
                 },
                 ..Default::default()
             });
 
-        container(
-            container(contents)
-                .style(|_| contents_style(&tile.config.theme))
-                .clip(true),
-        )
-        .style(|_| contents_style(&tile.config.theme))
-        .into()
+        container(contents.clip(true))
+            .style(|_| contents_style(&tile.config.theme))
+            .into()
     } else {
         space().into()
-    }
-}
-
-fn contents_style(theme: &Theme) -> container::Style {
-    container::Style {
-        background: None,
-        text_color: None,
-        border: iced::Border {
-            color: theme.text_color(0.7),
-            width: 0.0,
-            radius: Radius::new(14.0),
-        },
-        ..Default::default()
     }
 }

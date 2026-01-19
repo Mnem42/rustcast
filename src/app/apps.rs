@@ -4,17 +4,15 @@
 use std::path::Path;
 
 use iced::{
-    Alignment, Background, Border,
+    Alignment,
     Length::Fill,
-    border::Radius,
-    widget::{Button, Row, Text, button, container, image::Viewer},
+    widget::{Button, Row, Text, container, image::Viewer},
 };
 
 use crate::{
     app::{Message, Page, RUSTCAST_DESC_NAME},
     commands::Function,
-    config::Theme,
-    styles::{tint, with_alpha},
+    styles::{result_button_style, result_row_container_style},
     utils::handle_from_icns,
 };
 
@@ -59,35 +57,45 @@ impl App {
             App {
                 open_command: AppCommand::Function(Function::Quit),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: None,
+                icons: handle_from_icns(Path::new(
+                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
+                )),
                 name: "Quit RustCast".to_string(),
                 name_lc: "quit".to_string(),
             },
             App {
                 open_command: AppCommand::Function(Function::OpenPrefPane),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: None,
+                icons: handle_from_icns(Path::new(
+                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
+                )),
                 name: "Open RustCast Preferences".to_string(),
                 name_lc: "settings".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::SwitchToPage(Page::ClipboardHistory)),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: None,
+                icons: handle_from_icns(Path::new(
+                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
+                )),
                 name: "Clipboard History".to_string(),
                 name_lc: "clipboard".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::ReloadConfig),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: None,
+                icons: handle_from_icns(Path::new(
+                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
+                )),
                 name: "Reload RustCast".to_string(),
                 name_lc: "refresh".to_string(),
             },
             App {
                 open_command: AppCommand::Display,
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: None,
+                icons: handle_from_icns(Path::new(
+                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
+                )),
                 name: format!("Current RustCast Version: {app_version}"),
                 name_lc: "version".to_string(),
             },
@@ -168,36 +176,5 @@ impl App {
             .padding(8)
             .width(Fill)
             .into()
-    }
-}
-
-fn result_button_style(theme: &Theme) -> button::Style {
-    button::Style {
-        text_color: theme.text_color(1.),
-        background: Some(Background::Color(theme.bg_color())),
-        ..Default::default()
-    }
-}
-
-fn result_row_container_style(tile: &Theme, focused: bool) -> container::Style {
-    let base = tile.bg_color();
-    let row_bg = if focused {
-        with_alpha(tint(base, 0.10), 1.0)
-    } else {
-        with_alpha(tint(base, 0.04), 1.0)
-    };
-
-    container::Style {
-        background: Some(Background::Color(row_bg)),
-        border: Border {
-            color: if focused {
-                tile.text_color(0.35)
-            } else {
-                tile.text_color(0.10)
-            },
-            width: if focused { 1.1 } else { 0.8 },
-            radius: Radius::new(10.0),
-        },
-        ..Default::default()
     }
 }
