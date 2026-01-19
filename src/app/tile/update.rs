@@ -3,7 +3,6 @@ use std::cmp::min;
 use std::fs;
 use std::path::Path;
 use std::thread;
-use std::time::Duration;
 
 use iced::Task;
 use iced::widget::image::Handle;
@@ -98,7 +97,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             tile.query_lc = input.trim().to_lowercase();
             tile.query = input;
             let prev_size = tile.results.len();
-            if tile.query_lc.is_empty() && tile.page == Page::Main {
+            if tile.query_lc.is_empty() && tile.page != Page::ClipboardHistory {
                 tile.results = vec![];
                 return window::resize(
                     id,
@@ -240,9 +239,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 tile.page = Page::ClipboardHistory
             }
 
-            if prev_size != new_length && tile.page == Page::Main {
-                std::thread::sleep(Duration::from_millis(30));
-
+            if prev_size != new_length && tile.page != Page::ClipboardHistory {
                 Task::batch([
                     window::resize(
                         id,
@@ -367,7 +364,10 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
 
         Message::SwitchToPage(page) => {
             tile.page = page;
-            Task::none()
+            Task::batch([
+                Task::done(Message::ClearSearchQuery),
+                Task::done(Message::ClearSearchResults),
+            ])
         }
 
         Message::RunFunction(command) => {

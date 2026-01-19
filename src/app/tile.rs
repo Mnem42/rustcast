@@ -29,6 +29,7 @@ use tray_icon::TrayIcon;
 
 use std::collections::BTreeMap;
 use std::fs;
+use std::ops::Bound;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -51,7 +52,7 @@ impl AppIndex {
     /// Search for an element in the index that starts with the provided prefix
     fn search_prefix<'a>(&'a self, prefix: &'a str) -> impl Iterator<Item = &'a App> + 'a {
         self.by_name
-            .range(prefix.to_string()..) // start at prefix
+            .range::<str, _>((Bound::Included(prefix), Bound::Unbounded))
             .take_while(move |(k, _)| k.starts_with(prefix))
             .map(|(_, v)| v)
     }
@@ -90,6 +91,7 @@ pub struct Tile {
     query_lc: String,
     results: Vec<App>,
     options: AppIndex,
+    emoji_apps: AppIndex,
     visible: bool,
     focused: bool,
     frontmost: Option<Retained<NSRunningApplication>>,
@@ -207,8 +209,14 @@ impl Tile {
     /// function to handle the search query changed event.
     pub fn handle_search_query_changed(&mut self) {
         let query = self.query_lc.clone();
-        let results: Vec<App> = self
-            .options
+        let options = if self.page == Page::Main {
+            &self.options
+        } else if self.page == Page::EmojiSearch {
+            &self.emoji_apps
+        } else {
+            &AppIndex::from_apps(vec![])
+        };
+        let results: Vec<App> = options
             .search_prefix(&query)
             .map(|x| x.to_owned())
             .collect();

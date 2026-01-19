@@ -21,6 +21,7 @@ pub const RUSTCAST_DESC_NAME: &str = "RustCast";
 pub enum Page {
     Main,
     ClipboardHistory,
+    EmojiSearch,
 }
 
 /// The types of arrow keys

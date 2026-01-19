@@ -11,6 +11,7 @@ use iced::{
 
 use crate::{
     app::{Message, Page, RUSTCAST_DESC_NAME},
+    clipboard::ClipBoardContentType,
     commands::Function,
     styles::{result_button_style, result_row_container_style},
     utils::handle_from_icns,
@@ -49,6 +50,21 @@ impl PartialEq for App {
 }
 
 impl App {
+    /// A vec of all the emojis as App structs
+    pub fn emoji_apps() -> Vec<App> {
+        emojis::iter()
+            .filter(|x| x.unicode_version() < emojis::UnicodeVersion::new(13, 0))
+            .map(|x| App {
+                icons: None,
+                name: x.to_string(),
+                name_lc: x.name().to_string(),
+                open_command: AppCommand::Function(Function::CopyToClipboard(
+                    ClipBoardContentType::Text(x.to_string()),
+                )),
+                desc: x.name().to_string(),
+            })
+            .collect()
+    }
     /// This returns the basic apps that rustcast has, such as quiting rustcast and opening preferences
     pub fn basic_apps() -> Vec<App> {
         let app_version = option_env!("APP_VERSION").unwrap_or("Unknown Version");
@@ -71,6 +87,15 @@ impl App {
                 )),
                 name: "Open RustCast Preferences".to_string(),
                 name_lc: "settings".to_string(),
+            },
+            App {
+                open_command: AppCommand::Message(Message::SwitchToPage(Page::EmojiSearch)),
+                desc: RUSTCAST_DESC_NAME.to_string(),
+                icons: handle_from_icns(Path::new(
+                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
+                )),
+                name: "Search for an Emoji".to_string(),
+                name_lc: "emoji".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::SwitchToPage(Page::ClipboardHistory)),

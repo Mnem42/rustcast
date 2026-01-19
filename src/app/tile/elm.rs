@@ -68,6 +68,7 @@ pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
             focus_id: 0,
             results: vec![],
             options,
+            emoji_apps: AppIndex::from_apps(App::emoji_apps()),
             hotkey,
             visible: true,
             frontmost: None,
