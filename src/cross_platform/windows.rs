@@ -1,5 +1,7 @@
 use {
-    crate::app::apps::App, tracing::Level, windows::{
+    crate::app::apps::App,
+    tracing::Level,
+    windows::{
         Win32::{
             System::Com::CoTaskMemFree,
             UI::{
@@ -11,7 +13,7 @@ use {
             },
         },
         core::GUID,
-    }
+    },
 };
 
 fn get_apps_from_registry(apps: &mut Vec<App>) {
