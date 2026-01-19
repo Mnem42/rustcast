@@ -12,7 +12,7 @@ pub mod tile;
 pub const WINDOW_WIDTH: f32 = 500.;
 
 /// The default window height
-pub const DEFAULT_WINDOW_HEIGHT: f32 = 65.;
+pub const DEFAULT_WINDOW_HEIGHT: f32 = 80.;
 
 /// The rustcast descriptor name to be put for all rustcast commands
 pub const RUSTCAST_DESC_NAME: &str = "RustCast";
@@ -22,6 +22,24 @@ pub const RUSTCAST_DESC_NAME: &str = "RustCast";
 pub enum Page {
     Main,
     ClipboardHistory,
+    EmojiSearch,
+}
+
+/// The types of arrow keys
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum ArrowKey {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+/// The ways the cursor can move when a key is pressed
+#[derive(Debug, Clone)]
+pub enum Move {
+    Back,
+    Forwards(String),
 }
 
 /// The message type that iced uses for actions that can do something
@@ -30,16 +48,21 @@ pub enum Message {
     OpenWindow,
     SearchQueryChanged(String, Id),
     KeyPressed(u32),
+    FocusTextInput(Move),
     HideWindow(Id),
     RunFunction(Function),
+    OpenFocused,
     ReturnFocus,
+    EscKeyPressed(Id),
     ClearSearchResults,
     WindowFocusChanged(Id, bool),
     ClearSearchQuery,
+    HideTrayIcon,
     ReloadConfig,
     SetSender(ExtSender),
     SwitchToPage(Page),
     ClipboardHistory(ClipBoardContentType),
+    ChangeFocus(ArrowKey),
 }
 
 /// The window settings for rustcast

@@ -58,7 +58,6 @@ jobs:
           MACOS_NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
           MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
 
-
       # Homebrew-style artifact from the built .app
       - name: Create artifacts directory
         run: mkdir -p artifacts

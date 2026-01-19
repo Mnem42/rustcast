@@ -1,9 +1,9 @@
 //! This module handles the logic for the new and view functions according to the elm
 //! architecture. If the subscription function becomes too large, it should be moved to this file
 
-use global_hotkey::hotkey::{Code, Modifiers};
+use global_hotkey::hotkey::HotKey;
 use iced::border::Radius;
-use iced::widget::scrollable::{Direction, Scrollbar};
+use iced::widget::scrollable::{Anchor, Direction, Scrollbar};
 use iced::widget::text::LineHeight;
 use iced::widget::{Column, Scrollable, container, space};
 use iced::{Color, window};
@@ -12,9 +12,9 @@ use iced::{Length::Fill, widget::text_input};
 
 use rayon::slice::ParallelSliceMut;
 
-use crate::app::apps::AppCommand;
-use crate::config::Theme;
+use crate::app::tile::AppIndex;
 use crate::utils::get_installed_apps;
+use crate::styles::{contents_style, rustcast_text_input_style};
 use crate::{
     app::{Message, Page, apps::App, default_settings, tile::Tile},
     config::Config,
@@ -44,18 +44,13 @@ pub fn default_app_paths() -> Vec<String> {
 }
 
 /// Initialise the base window
-pub fn new(
-    hotkey: (Option<Modifiers>, Code),
-    keybind_id: u32,
-    config: &Config,
-) -> (Tile, Task<Message>) {
+pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
     #[allow(unused_mut)]
     let mut settings = default_settings();
 
+    // get normal settings and modify position
     #[cfg(target_os = "windows")]
     {
-        // get normal settings and modify position
-
         use iced::window::Position;
 
         use crate::cross_platform::windows::open_on_focused_monitor;
@@ -81,21 +76,22 @@ pub fn new(
     options.extend(config.shells.iter().map(|x| x.to_app()));
     options.extend(App::basic_apps());
     options.par_sort_by_key(|x| x.name.len());
+    let options = AppIndex::from_apps(options);
 
     (
         Tile {
             query: String::new(),
             query_lc: String::new(),
-            prev_query_lc: String::new(),
+            focus_id: 0,
             results: vec![],
             options,
+            emoji_apps: AppIndex::from_apps(App::emoji_apps()),
             hotkey,
             visible: true,
             frontmost: None,
             focused: false,
             config: config.clone(),
             theme: config.theme.to_owned().into(),
-            open_hotkey_id: keybind_id,
             clipboard_content: vec![],
             tray_icon: None,
             sender: None,
@@ -111,88 +107,59 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
             .on_input(move |a| Message::SearchQueryChanged(a, wid))
             .on_paste(move |a| Message::SearchQueryChanged(a, wid))
             .font(tile.config.theme.font())
-            .on_submit_maybe({
-                if !tile.results.is_empty() {
-                    match tile.results.first().unwrap().to_owned().open_command {
-                        AppCommand::Function(func) => Some(Message::RunFunction(func)),
-                        AppCommand::Message(msg) => Some(msg),
-                        AppCommand::Display => None,
-                    }
-                } else {
-                    None
-                }
-            })
+            .on_submit(Message::OpenFocused)
             .id("query")
             .width(Fill)
-            .line_height(LineHeight::Relative(1.5))
-            .style(|_, _| text_input_style(&tile.config.theme))
+            .line_height(LineHeight::Relative(1.75))
+            .style(|_, status| rustcast_text_input_style(&tile.config.theme, status))
             .padding(20);
 
         let scrollbar_direction = if tile.config.theme.show_scroll_bar {
-            Direction::Vertical(Scrollbar::new().width(2).scroller_width(2))
+            Direction::Vertical(
+                Scrollbar::new()
+                    .width(2)
+                    .scroller_width(2)
+                    .anchor(Anchor::Start),
+            )
         } else {
             Direction::Vertical(Scrollbar::hidden())
         };
-        let results = match tile.page {
-            Page::Main => {
-                let mut search_results = Column::new();
-                for result in &tile.results {
-                    search_results = search_results.push(result.render(&tile.config.theme));
-                }
-                search_results
-            }
-            Page::ClipboardHistory => {
-                let mut clipboard_history = Column::new();
-                for result in &tile.clipboard_content {
-                    clipboard_history = clipboard_history
-                        .push(result.render_clipboard_item(tile.config.theme.clone()));
-                }
-                clipboard_history
-            }
-        };
-        let scrollable = Scrollable::with_direction(results, scrollbar_direction);
-        let contents = Column::new().push(title_input).push(scrollable);
 
-        container(contents)
-            .style(|_| iced::widget::container::Style {
-                background: None,
+        let results = if tile.page == Page::ClipboardHistory {
+            Column::from_iter(
+                tile.clipboard_content
+                    .iter()
+                    .enumerate()
+                    .map(|(i, content)| {
+                        content
+                            .to_app()
+                            .render(tile.config.theme.clone(), i as u32, tile.focus_id)
+                    }),
+            )
+        } else {
+            Column::from_iter(tile.results.iter().enumerate().map(|(i, app)| {
+                app.clone()
+                    .render(tile.config.theme.clone(), i as u32, tile.focus_id)
+            }))
+        };
+
+        let scrollable = Scrollable::with_direction(results, scrollbar_direction).id("results");
+        let contents = container(Column::new().push(title_input).push(scrollable).spacing(0))
+            .style(|_| container::Style {
                 text_color: None,
+                background: None,
                 border: iced::Border {
-                    color: tile.config.theme.text_color(1.),
+                    color: Color::WHITE,
                     width: 1.,
-                    radius: Radius::new(0),
+                    radius: Radius::new(5),
                 },
                 ..Default::default()
-            })
-            .padding(0)
-            .clip(true)
+            });
+
+        container(contents.clip(true))
+            .style(|_| contents_style(&tile.config.theme))
             .into()
     } else {
         space().into()
-    }
-}
-
-fn text_input_style(theme: &Theme) -> iced::widget::text_input::Style {
-    text_input::Style {
-        background: iced::Background::Color(Color::TRANSPARENT),
-        border: iced::Border {
-            color: iced::Color {
-                r: 0.95,
-                g: 0.95,
-                b: 0.95,
-                a: 0.7,
-            },
-            width: 0.5,
-            radius: iced::border::Radius {
-                top_left: 0.,
-                top_right: 0.,
-                bottom_right: 0.,
-                bottom_left: 0.,
-            },
-        },
-        icon: theme.text_color(0.),
-        placeholder: theme.text_color(0.7),
-        value: theme.text_color(1.),
-        selection: theme.text_color(0.2),
     }
 }

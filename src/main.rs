@@ -3,6 +3,9 @@ mod calculator;
 mod clipboard;
 mod commands;
 mod config;
+#[cfg(target_os = "macos")]
+mod styles;
+mod unit_conversion;
 mod utils;
 
 mod cross_platform;
@@ -28,9 +31,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 fn main() -> iced::Result {
     #[cfg(target_os = "macos")]
-    {
-        macos::set_activation_policy_accessory();
-    }
+    cross_platform::macos::set_activation_policy_accessory();
 
     let file_path = get_config_file_path();
     let config = read_config_file(&file_path).unwrap();
@@ -58,11 +59,7 @@ fn main() -> iced::Result {
 
     let manager = GlobalHotKeyManager::new().unwrap();
 
-    let modifier = Modifiers::from_name(&config.toggle_mod);
-
-    let key = config.toggle_key;
-
-    let show_hide = HotKey::new(modifier, key);
+    let show_hide = config.toggle_hotkey.parse().unwrap();
 
     // Hotkeys are stored as a vec so that hyperkey support can be added later
     let hotkeys = vec![show_hide];
@@ -83,7 +80,7 @@ fn main() -> iced::Result {
     tracing::info!("Starting.");
 
     iced::daemon(
-        move || Tile::new((modifier, key), show_hide.id(), &config),
+        move || Tile::new(show_hide, &config),
         Tile::update,
         Tile::view,
     )

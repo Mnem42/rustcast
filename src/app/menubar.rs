@@ -1,6 +1,6 @@
 //! This has the menubar icon logic for the app
 
-use global_hotkey::{hotkey::Code, hotkey::Modifiers};
+use global_hotkey::hotkey::{Code, HotKey, Modifiers};
 use image::{DynamicImage, ImageReader};
 use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
@@ -18,13 +18,13 @@ use crate::{
 use tokio::runtime::Runtime;
 
 /// This create a new menubar icon for the app
-pub fn menu_icon(hotkey: (Option<Modifiers>, Code), hotkey_id: u32, sender: ExtSender) -> TrayIcon {
+pub fn menu_icon(hotkey: HotKey, sender: ExtSender) -> TrayIcon {
     let builder = TrayIconBuilder::new();
 
     let image = get_image();
     let icon = Icon::from_rgba(image.as_bytes().to_vec(), image.width(), image.height()).unwrap();
 
-    init_event_handler(sender, hotkey_id);
+    init_event_handler(sender, hotkey.id());
 
     let menu = Menu::with_items(&[
         &version_item(),
@@ -38,6 +38,7 @@ pub fn menu_icon(hotkey: (Option<Modifiers>, Code), hotkey_id: u32, sender: ExtS
         &get_help_item(),
         &PredefinedMenuItem::separator(),
         &open_settings_item(),
+        &hide_tray_icon(),
         &quit_item(),
     ])
     .unwrap();
@@ -50,7 +51,7 @@ pub fn menu_icon(hotkey: (Option<Modifiers>, Code), hotkey_id: u32, sender: ExtS
 }
 
 fn get_image() -> DynamicImage {
-    let image_path = if cfg!(debug_assertions) {
+    let image_path = if cfg!(debug_assertions) && !cfg!(target_os = "macos") {
         "docs/icon.png"
     } else {
         "/Applications/Rustcast.app/Contents/Resources/icon.png"
@@ -72,6 +73,10 @@ fn init_event_handler(sender: ExtSender, hotkey_id: u32) {
                     sender.clone().try_send(Message::ReloadConfig).unwrap();
                 });
             }
+            "hide_tray_icon" => {
+                runtime
+                    .spawn(async move { sender.clone().try_send(Message::HideTrayIcon).unwrap() });
+            }
             "open_issue_page" => {
                 open_url("https://github.com/unsecretised/rustcast/issues/new");
             }
@@ -84,7 +89,7 @@ fn init_event_handler(sender: ExtSender, hotkey_id: u32) {
                 });
             }
             "open_help_page" => {
-                open_url("https://github.com/unsecretised/rustcast/discussions");
+                open_url("https://github.com/unsecretised/rustcast/discussions/new?category=q-a");
             }
             "open_preferences" => {
                 open_settings();
@@ -102,12 +107,16 @@ fn version_item() -> MenuItem {
     MenuItem::new(version, false, None)
 }
 
-fn open_item(hotkey: (Option<Modifiers>, Code)) -> MenuItem {
+fn hide_tray_icon() -> MenuItem {
+    MenuItem::with_id("hide_tray_icon", "Hide Tray Icon", true, None)
+}
+
+fn open_item(hotkey: HotKey) -> MenuItem {
     MenuItem::with_id(
         "show_rustcast",
         "Toggle View",
         true,
-        Some(Accelerator::new(hotkey.0, hotkey.1)),
+        Some(Accelerator::new(Some(hotkey.mods), hotkey.key)),
     )
 }
 

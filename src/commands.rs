@@ -11,7 +11,7 @@ use objc2_app_kit::NSWorkspace;
 use objc2_foundation::NSURL;
 
 use crate::utils::open_application;
-use crate::{calculator::Expression, clipboard::ClipBoardContentType, config::Config};
+use crate::{calculator::Expr, clipboard::ClipBoardContentType, config::Config};
 
 /// The different functions that rustcast can perform
 #[derive(Debug, Clone, PartialEq)]
@@ -22,7 +22,7 @@ pub enum Function {
     RandomVar(i32), // Easter egg function
     CopyToClipboard(ClipBoardContentType),
     GoogleSearch(String),
-    Calculate(Expression),
+    Calculate(Expr),
     OpenPrefPane,
     Quit,
 }
@@ -76,7 +76,7 @@ impl Function {
             }
 
             Function::OpenWebsite(url) => {
-                let _ = if url.starts_with("http") {
+                let open_url = if url.starts_with("http") {
                     url.to_owned()
                 } else {
                     format!("https://{}", url)
@@ -85,7 +85,7 @@ impl Function {
                 thread::spawn(move || {
                     NSWorkspace::new().openURL(
                         &NSURL::URLWithString_relativeToURL(
-                            &objc2_foundation::NSString::from_str(&open),
+                            &objc2_foundation::NSString::from_str(&open_url),
                             None,
                         )
                         .unwrap(),
@@ -96,7 +96,7 @@ impl Function {
             Function::Calculate(expr) => {
                 Clipboard::new()
                     .unwrap()
-                    .set_text(expr.eval().to_string())
+                    .set_text(expr.eval().map(|x| x.to_string()).unwrap_or("".to_string()))
                     .unwrap_or(());
             }
 

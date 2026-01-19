@@ -4,7 +4,7 @@
 > search bar that people can use to do many things, like opening apps,
 > calculators, quick-notes, etc.
 
-![RustCast Demo PreRelease V1](./docs/rustcast-v0-3-4.png)
+![RustCast Demo PreRelease V1](./docs/rustcast-v0-4-5.png)
 
 ## Installation:
 
@@ -41,27 +41,18 @@ use spotlight :) Have fun!)
 
 ## Config:
 
-> I have a high chance of gorfetting (forgetting) to update the config docs, but
-> even if I do, you will most likely be able to find my config easily
+> I have a high chance of forgetting to update the config docs, but even if I
+> do, you will most likely be able to find my config and a list of the latest
+> config options easily
 > [here](https://github.com/unsecretised/rustcast-dotfiles)
 
 The config file should be located at: `~/.config/rustcast/config.toml` RustCast
-doesn't create the default configuration for you, but it does use its
+creates the default configuration for you, but it does use its
 [default options](docs/default.toml) Here's a full list of what all you can
-configure [The list](docs/config.toml) The blurring and background is still a
-bit wonky, and will be fixed in the upcoming releases
+configure [The list](docs/config.toml) The blurring is still a bit wonky, and
+will be fixed in the upcoming releases
 
 ## Feature list:
-
-### Planned:
-
-- [ ] Select the options using arrow keys
-- [ ] Popup note-taking
-- [ ] Plugin Support (Partially implemented on 15/12/2025)
-- [ ] Hyperkey - Map CMD + OPT + CTRL + SHIFT to a physical key
-- [ ] Ability to pick between tabs in firefox / chromium browsers - using
-      [Puppeteer](https://pptr.dev/)
-- [ ] Cross platform support
 
 ### Finished:
 
@@ -82,7 +73,47 @@ bit wonky, and will be fixed in the upcoming releases
       cliboard history page, which allows u to access your clipboard history,
 - [x] Blur / transparent background (7/1/2026) and then use `main` to switch
       back, or just open an close the app again
+- [x] Select the options using arrow keys
 - [x] Tray icons (8/1/2026)
+- [x] Unit Conversions (19/1/2026) thanks to [Hriztam](https://github.com/hriztam)
+- [x] Emoji Searching (19/1/2026) Allows people to search for emojis through rustcast
+
+### Planned:
+
+- [ ] Popup note-taking
+- [ ] Plugin Support (Partially implemented on 15/12/2025)
+- [ ] Hyperkey - Map CMD + OPT + CTRL + SHIFT to a physical key
+- [ ] Ability to pick between tabs in firefox / chromium browsers - using
+      [Puppeteer](https://pptr.dev/)
+- [ ] Cross platform support
+
+## RustCast wouldn't be possible without these people:
+
+- [Nazeofel](https://github.com/Nazeofel) - First sponsor + initiater of windows
+  support
+- [Mnem42](https://github.com/mnem42) - Helped add windows support
+- [Random Scientist](https://github.com/Random-Scientist) - First ever community
+  contributor to rustcast
+- [Lemon](https://github.com/lemonlambda) - Sponsored me, and gave me free
+  Discord Nitro
+- [Julie / Zoey](https://github.com/zoey-on-github) - Gave me amazing feedback
+  and has been using RustCast since almost the first version!
+
+All the people who starred my repo!!
+
+Those who sponsor me also get a free easter egg inside RustCast, so if you want
+a free easter egg, a dollar is all you need!
+
+And the updated list of contributors:
+
+<a href="https://github.com/unsecretised/rustcast/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=unsecretised/rustcast" />
+</a>
+
+### Easter egg list:
+
+- Nazeofel (Random Variable on discord) -> led to the _randomvar_ easter egg
+- Lemon -> led to the _lemon_ easter egg that shows "lemon" on rustcast
 
 ## If you like rustcast, consider starring it on github :)
 

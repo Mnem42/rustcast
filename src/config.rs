@@ -1,8 +1,6 @@
 //! This is the config file type definitions for rustcast
 use std::{path::Path, sync::Arc};
 
-use global_hotkey::hotkey::Code;
-
 use iced::{Font, font::Family, theme::Custom, widget::image::Handle};
 use serde::{Deserialize, Serialize};
 
@@ -16,8 +14,7 @@ use crate::{
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
-    pub toggle_mod: String,
-    pub toggle_key: Code,
+    pub toggle_hotkey: String,
     pub buffer_rules: Buffer,
     pub theme: Theme,
     pub placeholder: String,
@@ -32,8 +29,7 @@ impl Default for Config {
     /// The default config
     fn default() -> Self {
         Self {
-            toggle_mod: "ALT".to_string(),
-            toggle_key: Code::Space,
+            toggle_hotkey: "ALT+SPACE".to_string(),
             buffer_rules: Buffer::default(),
             theme: Theme::default(),
             placeholder: String::from("Time to be productive!"),
@@ -52,7 +48,6 @@ impl Default for Config {
 pub struct Theme {
     pub text_color: (f32, f32, f32),
     pub background_color: (f32, f32, f32),
-    pub background_opacity: f32,
     pub blur: bool,
     pub show_icons: bool,
     pub show_scroll_bar: bool,
@@ -63,8 +58,7 @@ impl Default for Theme {
     fn default() -> Self {
         Self {
             text_color: (0.95, 0.95, 0.96),
-            background_color: (0., 0., 0.),
-            background_opacity: 0.25,
+            background_color: (0.09, 0.09, 0.09),
             blur: false,
             show_icons: true,
             show_scroll_bar: true,
@@ -125,7 +119,7 @@ impl Theme {
             r: self.background_color.0,
             g: self.background_color.1,
             b: self.background_color.2,
-            a: self.background_opacity,
+            a: 0.,
         }
     }
 

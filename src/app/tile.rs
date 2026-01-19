@@ -8,26 +8,25 @@ use {
     windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, SetForegroundWindow},
 };
 
-use crate::app::apps::{App, AppCommand};
+use crate::app::apps::App;
 use crate::app::tile::elm::default_app_paths;
-use crate::app::{Message, Page};
+use crate::app::{ArrowKey, Message, Move, Page};
 use crate::clipboard::ClipBoardContentType;
-use crate::commands::Function;
 use crate::config::Config;
 use crate::utils::open_settings;
 
 use arboard::Clipboard;
-use global_hotkey::hotkey::{Code, Modifiers};
+use global_hotkey::hotkey::HotKey;
 use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 
 use iced::futures::SinkExt;
 use iced::futures::channel::mpsc::{Sender, channel};
-use iced::window;
 use iced::{
     Element, Subscription, Task, Theme, futures,
     keyboard::{self, key::Named},
     stream,
 };
+use iced::{event, window};
 
 #[cfg(target_os = "macos")]
 use objc2::rc::Retained;
@@ -36,7 +35,9 @@ use objc2_app_kit::NSRunningApplication;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tray_icon::TrayIcon;
 
+use std::collections::BTreeMap;
 use std::fs;
+use std::ops::Bound;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -47,6 +48,32 @@ pub struct ExtSender(pub Sender<Message>);
 /// Disable dropping the sender
 impl Drop for ExtSender {
     fn drop(&mut self) {}
+}
+
+/// All the indexed apps that rustcast can search for
+#[derive(Clone, Debug)]
+struct AppIndex {
+    by_name: BTreeMap<String, App>,
+}
+
+impl AppIndex {
+    /// Search for an element in the index that starts with the provided prefix
+    fn search_prefix<'a>(&'a self, prefix: &'a str) -> impl Iterator<Item = &'a App> + 'a {
+        self.by_name
+            .range::<str, _>((Bound::Included(prefix), Bound::Unbounded))
+            .take_while(move |(k, _)| k.starts_with(prefix))
+            .map(|(_, v)| v)
+    }
+
+    /// Factory function for creating
+    pub fn from_apps(options: Vec<App>) -> Self {
+        let mut bmap = BTreeMap::new();
+        for app in options {
+            bmap.insert(app.name_lc.clone(), app);
+        }
+
+        AppIndex { by_name: bmap }
+    }
 }
 
 /// This is the base window, and its a "Tile"
@@ -66,21 +93,22 @@ impl Drop for ExtSender {
 /// - Page ([`Page`]) the current page of the window (main or clipboard history)
 #[derive(Clone)]
 pub struct Tile {
-    theme: iced::Theme,
-    query: String,
+    pub theme: iced::Theme,
+    pub focus_id: u32,
+    pub query: String,
     query_lc: String,
-    prev_query_lc: String,
     results: Vec<App>,
-    options: Vec<App>,
+    options: AppIndex,
+    emoji_apps: AppIndex,
     visible: bool,
     focused: bool,
     #[cfg(target_os = "macos")]
     frontmost: Option<Retained<NSRunningApplication>>,
     #[cfg(target_os = "windows")]
     frontmost: Option<HWND>,
-    config: Config,
-    open_hotkey_id: u32,
-    hotkey: (Option<Modifiers>, Code),
+    pub config: Config,
+    /// The opening hotkey
+    hotkey: HotKey,
     clipboard_content: Vec<ClipBoardContentType>,
     tray_icon: Option<TrayIcon>,
     sender: Option<ExtSender>,
@@ -89,12 +117,8 @@ pub struct Tile {
 
 impl Tile {
     /// Initialise the base window
-    pub fn new(
-        hotkey: (Option<Modifiers>, Code),
-        keybind_id: u32,
-        config: &Config,
-    ) -> (Self, Task<Message>) {
-        elm::new(hotkey, keybind_id, config)
+    pub fn new(hotkey: HotKey, config: &Config) -> (Self, Task<Message>) {
+        elm::new(hotkey, config)
     }
 
     /// This handles the iced's updates, which have all the variants of [Message]
@@ -125,8 +149,16 @@ impl Tile {
     /// - Keypresses (escape to close the window)
     /// - Window focus changes
     pub fn subscription(&self) -> Subscription<Message> {
+        let keyboard = event::listen_with(|event, _, id| match event {
+            event::Event::Keyboard(keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                ..
+            }) => Some(Message::EscKeyPressed(id)),
+            _ => None,
+        });
         Subscription::batch([
             Subscription::run(handle_hotkeys),
+            keyboard,
             Subscription::run(handle_recipient),
             Subscription::run(handle_hot_reloading),
             Subscription::run(handle_clipboard_history),
@@ -137,12 +169,26 @@ impl Tile {
                         keyboard::Key::Named(Named::Escape) => {
                             return Some(Message::KeyPressed(65598));
                         }
+                        keyboard::Key::Named(Named::ArrowUp) => {
+                            return Some(Message::ChangeFocus(ArrowKey::Up));
+                        }
+                        keyboard::Key::Named(Named::ArrowDown) => {
+                            return Some(Message::ChangeFocus(ArrowKey::Down));
+                        }
                         keyboard::Key::Character(chr) => {
                             if modifiers.command() && chr.to_string().to_lowercase() == "r" {
                                 return Some(Message::ReloadConfig);
                             } else if modifiers.command() && chr.to_string() == "," {
                                 open_settings();
+                            } else {
+                                return Some(Message::FocusTextInput(Move::Forwards(
+                                    chr.to_string(),
+                                )));
                             }
+                        }
+                        keyboard::Key::Named(Named::Enter) => return Some(Message::OpenFocused),
+                        keyboard::Key::Named(Named::Backspace) => {
+                            return Some(Message::FocusTextInput(Move::Back));
                         }
                         _ => {}
                     }
@@ -173,37 +219,20 @@ impl Tile {
     /// should be separated out to make it easier to test. This function is called by the `update`
     /// function to handle the search query changed event.
     pub fn handle_search_query_changed(&mut self) {
-        let filter_vec: &Vec<App> = if self.query_lc.starts_with(&self.prev_query_lc) {
-            self.prev_query_lc = self.query_lc.to_owned();
-            &self.results
-        } else {
-            &self.options
-        };
-
         let query = self.query_lc.clone();
-
-        let mut exact: Vec<App> = filter_vec
-            .par_iter()
-            .filter(|x| match &x.open_command {
-                &AppCommand::Function(Function::RunShellCommand(_, _)) => x
-                    .name_lc
-                    .starts_with(query.split_once(" ").unwrap_or((&query, "")).0),
-                _ => x.name_lc == query,
-            })
-            .cloned()
+        let options = if self.page == Page::Main {
+            &self.options
+        } else if self.page == Page::EmojiSearch {
+            &self.emoji_apps
+        } else {
+            &AppIndex::from_apps(vec![])
+        };
+        let results: Vec<App> = options
+            .search_prefix(&query)
+            .map(|x| x.to_owned())
             .collect();
 
-        let mut prefix: Vec<App> = filter_vec
-            .par_iter()
-            .filter(|x| match x.open_command {
-                AppCommand::Function(Function::RunShellCommand(_, _)) => false,
-                _ => x.name_lc != query && x.name_lc.starts_with(&query),
-            })
-            .cloned()
-            .collect();
-
-        exact.append(&mut prefix);
-        self.results = exact;
+        self.results = results;
     }
 
     /// Gets the frontmost application to focus later.
