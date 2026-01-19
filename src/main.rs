@@ -3,6 +3,9 @@ mod calculator;
 mod clipboard;
 mod commands;
 mod config;
+#[cfg(target_os = "macos")]
+mod styles;
+mod unit_conversion;
 mod utils;
 
 mod cross_platform;

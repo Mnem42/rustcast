@@ -4,7 +4,6 @@ use std::fs;
 #[cfg(target_os = "macos")]
 use std::path::Path;
 use std::thread;
-use std::time::Duration;
 
 use iced::Task;
 #[cfg(target_os = "macos")]
@@ -26,14 +25,18 @@ use crate::app::default_settings;
 use crate::app::menubar::menu_icon;
 use crate::app::tile::AppIndex;
 use crate::app::tile::elm::default_app_paths;
-
-use crate::calculator::Expression;
-use crate::commands::Function;
-use crate::config::Config;
-
 use crate::app::{Message, Page, tile::Tile};
+
 #[cfg(target_os = "windows")]
 use crate::utils::get_config_installation_dir;
+
+use crate::calculator::Expr;
+use crate::clipboard::ClipBoardContentType;
+use crate::commands::Function;
+use crate::config::Config;
+use crate::haptics::HapticPattern;
+use crate::haptics::perform_haptic;
+use crate::unit_conversion;
 use crate::utils::get_installed_apps;
 
 #[cfg(target_os = "macos")]
@@ -71,6 +74,29 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             Task::none()
         }
 
+        Message::EscKeyPressed(id) => {
+            if tile.query_lc.is_empty() {
+                Task::batch([
+                    Task::done(Message::HideWindow(id)),
+                    Task::done(Message::ReturnFocus),
+                ])
+            } else {
+                tile.page = Page::Main;
+
+                Task::batch(vec![
+                    Task::done(Message::ClearSearchQuery),
+                    Task::done(Message::ClearSearchResults),
+                    window::resize(
+                        id,
+                        iced::Size {
+                            width: WINDOW_WIDTH,
+                            height: DEFAULT_WINDOW_HEIGHT,
+                        },
+                    ),
+                ])
+            }
+        }
+
         Message::SearchQueryChanged(input, id) => {
             tile.focus_id = 0;
             #[cfg(target_os = "macos")]
@@ -81,7 +107,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             tile.query_lc = input.trim().to_lowercase();
             tile.query = input;
             let prev_size = tile.results.len();
-            if tile.query_lc.is_empty() && tile.page == Page::Main {
+            if tile.query_lc.is_empty() && tile.page != Page::ClipboardHistory {
                 tile.results = vec![];
                 return window::resize(
                     id,
@@ -142,19 +168,43 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             tile.handle_search_query_changed();
 
             if tile.results.is_empty()
-                && let Some(res) = Expression::from_str(&tile.query)
+                && let Some(res) = Expr::from_str(&tile.query).ok()
             {
                 tile.results.push(App {
-                    open_command: AppCommand::Function(Function::Calculate(res)),
+                    open_command: AppCommand::Function(Function::Calculate(res.clone())),
                     desc: RUSTCAST_DESC_NAME.to_string(),
                     icons: None,
-                    name: res.eval().to_string(),
+                    name: res.eval().map(|x| x.to_string()).unwrap_or("".to_string()),
                     name_lc: "".to_string(),
                 });
-            } else if let Ok(_) = Url::parse(&tile.query)
-                && tile.results.is_empty()
+            } else if tile.results.is_empty()
+                && let Some(conversions) = unit_conversion::convert_query(&tile.query)
             {
-                #[cfg(target_os = "macos")]
+                tile.results = conversions
+                    .into_iter()
+                    .map(|conversion| {
+                        let source = format!(
+                            "{} {}",
+                            unit_conversion::format_number(conversion.source_value),
+                            conversion.source_unit.name
+                        );
+                        let target = format!(
+                            "{} {}",
+                            unit_conversion::format_number(conversion.target_value),
+                            conversion.target_unit.name
+                        );
+                        App {
+                            open_command: AppCommand::Function(Function::CopyToClipboard(
+                                ClipBoardContentType::Text(target.clone()),
+                            )),
+                            desc: source,
+                            icons: None,
+                            name: target,
+                            name_lc: String::new(),
+                        }
+                    })
+                    .collect();
+            } else if tile.results.is_empty() && is_valid_url(&tile.query) {
                 tile.results.push(App {
                     open_command: AppCommand::Function(Function::OpenWebsite(tile.query.clone())),
                     desc: "Web Browsing".to_string(),
@@ -200,15 +250,13 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 tile.page = Page::ClipboardHistory
             }
 
-            if prev_size != new_length && tile.page == Page::Main {
-                std::thread::sleep(Duration::from_millis(30));
-
+            if prev_size != new_length && tile.page != Page::ClipboardHistory {
                 Task::batch([
                     window::resize(
                         id,
                         iced::Size {
                             width: WINDOW_WIDTH,
-                            height: ((max_elem * 55) + DEFAULT_WINDOW_HEIGHT as usize) as f32,
+                            height: ((max_elem * 70) + DEFAULT_WINDOW_HEIGHT as usize) as f32,
                         },
                     ),
                     Task::done(Message::ChangeFocus(ArrowKey::Left)),
@@ -219,7 +267,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                     id,
                     iced::Size {
                         width: WINDOW_WIDTH,
-                        height: ((element_count * 55) + DEFAULT_WINDOW_HEIGHT as usize) as f32,
+                        height: ((element_count * 70) + DEFAULT_WINDOW_HEIGHT as usize) as f32,
                     },
                 )
             } else {
@@ -272,14 +320,16 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
 
         Message::ReloadConfig => {
             #[cfg(target_os = "macos")]
-            let new_config: Config = toml::from_str(
+            let new_config: Config = match toml::from_str(
                 &fs::read_to_string(
                     std::env::var("HOME").unwrap_or("".to_owned())
                         + "/.config/rustcast/config.toml",
                 )
                 .unwrap_or("".to_owned()),
-            )
-            .unwrap();
+            ) {
+                Ok(a) => a,
+                Err(_) => return Task::none(),
+            };
 
             #[cfg(target_os = "windows")]
             let new_config: Config = toml::from_str(
@@ -350,7 +400,10 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
 
         Message::SwitchToPage(page) => {
             tile.page = page;
-            Task::none()
+            Task::batch([
+                Task::done(Message::ClearSearchQuery),
+                Task::done(Message::ClearSearchResults),
+            ])
         }
 
         Message::RunFunction(command) => {

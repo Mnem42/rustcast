@@ -12,7 +12,7 @@ pub mod tile;
 pub const WINDOW_WIDTH: f32 = 500.;
 
 /// The default window height
-pub const DEFAULT_WINDOW_HEIGHT: f32 = 65.;
+pub const DEFAULT_WINDOW_HEIGHT: f32 = 80.;
 
 /// The rustcast descriptor name to be put for all rustcast commands
 pub const RUSTCAST_DESC_NAME: &str = "RustCast";
@@ -22,8 +22,10 @@ pub const RUSTCAST_DESC_NAME: &str = "RustCast";
 pub enum Page {
     Main,
     ClipboardHistory,
+    EmojiSearch,
 }
 
+/// The types of arrow keys
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum ArrowKey {
@@ -33,6 +35,7 @@ pub enum ArrowKey {
     Right,
 }
 
+/// The ways the cursor can move when a key is pressed
 #[derive(Debug, Clone)]
 pub enum Move {
     Back,
@@ -50,6 +53,7 @@ pub enum Message {
     RunFunction(Function),
     OpenFocused,
     ReturnFocus,
+    EscKeyPressed(Id),
     ClearSearchResults,
     WindowFocusChanged(Id, bool),
     ClearSearchQuery,

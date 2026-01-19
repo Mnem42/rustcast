@@ -62,6 +62,8 @@ pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
     ))
 }
 
+
+/// Open the settings file with the system default editor
 pub fn open_settings() {
     #[cfg(target_os = "macos")]
     thread::spawn(move || {
@@ -74,6 +76,7 @@ pub fn open_settings() {
     });
 }
 
+/// Open a provided URL (Platform specific)
 pub fn open_url(url: &str) {
     let url = url.to_owned();
     #[cfg(target_os = "macos")]
@@ -236,4 +239,18 @@ pub fn get_installed_apps(config: &Config) -> Vec<App> {
     {
         get_installed_windows_apps()
     }
+}
+
+/// Check if the provided string is a valid url
+pub fn is_valid_url(s: &str) -> bool {
+    s.ends_with(".com")
+        || s.ends_with(".net")
+        || s.ends_with(".org")
+        || s.ends_with(".edu")
+        || s.ends_with(".gov")
+        || s.ends_with(".io")
+        || s.ends_with(".co")
+        || s.ends_with(".me")
+        || s.ends_with(".app")
+        || s.ends_with(".dev")
 }

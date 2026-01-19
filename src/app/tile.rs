@@ -21,12 +21,12 @@ use global_hotkey::{GlobalHotKeyEvent, HotKeyState};
 
 use iced::futures::SinkExt;
 use iced::futures::channel::mpsc::{Sender, channel};
-use iced::window;
 use iced::{
     Element, Subscription, Task, Theme, futures,
     keyboard::{self, key::Named},
     stream,
 };
+use iced::{event, window};
 
 #[cfg(target_os = "macos")]
 use objc2::rc::Retained;
@@ -37,6 +37,7 @@ use tray_icon::TrayIcon;
 
 use std::collections::BTreeMap;
 use std::fs;
+use std::ops::Bound;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -49,19 +50,22 @@ impl Drop for ExtSender {
     fn drop(&mut self) {}
 }
 
+/// All the indexed apps that rustcast can search for
 #[derive(Clone, Debug)]
 struct AppIndex {
     by_name: BTreeMap<String, App>,
 }
 
 impl AppIndex {
+    /// Search for an element in the index that starts with the provided prefix
     fn search_prefix<'a>(&'a self, prefix: &'a str) -> impl Iterator<Item = &'a App> + 'a {
         self.by_name
-            .range(prefix.to_string()..) // start at prefix
+            .range::<str, _>((Bound::Included(prefix), Bound::Unbounded))
             .take_while(move |(k, _)| k.starts_with(prefix))
             .map(|(_, v)| v)
     }
 
+    /// Factory function for creating
     pub fn from_apps(options: Vec<App>) -> Self {
         let mut bmap = BTreeMap::new();
         for app in options {
@@ -89,19 +93,20 @@ impl AppIndex {
 /// - Page ([`Page`]) the current page of the window (main or clipboard history)
 #[derive(Clone)]
 pub struct Tile {
-    theme: iced::Theme,
-    focus_id: u32,
-    query: String,
+    pub theme: iced::Theme,
+    pub focus_id: u32,
+    pub query: String,
     query_lc: String,
     results: Vec<App>,
     options: AppIndex,
+    emoji_apps: AppIndex,
     visible: bool,
     focused: bool,
     #[cfg(target_os = "macos")]
     frontmost: Option<Retained<NSRunningApplication>>,
     #[cfg(target_os = "windows")]
     frontmost: Option<HWND>,
-    config: Config,
+    pub config: Config,
     /// The opening hotkey
     hotkey: HotKey,
     clipboard_content: Vec<ClipBoardContentType>,
@@ -144,8 +149,16 @@ impl Tile {
     /// - Keypresses (escape to close the window)
     /// - Window focus changes
     pub fn subscription(&self) -> Subscription<Message> {
+        let keyboard = event::listen_with(|event, _, id| match event {
+            event::Event::Keyboard(keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                ..
+            }) => Some(Message::EscKeyPressed(id)),
+            _ => None,
+        });
         Subscription::batch([
             Subscription::run(handle_hotkeys),
+            keyboard,
             Subscription::run(handle_recipient),
             Subscription::run(handle_hot_reloading),
             Subscription::run(handle_clipboard_history),
@@ -207,8 +220,14 @@ impl Tile {
     /// function to handle the search query changed event.
     pub fn handle_search_query_changed(&mut self) {
         let query = self.query_lc.clone();
-        let results: Vec<App> = self
-            .options
+        let options = if self.page == Page::Main {
+            &self.options
+        } else if self.page == Page::EmojiSearch {
+            &self.emoji_apps
+        } else {
+            &AppIndex::from_apps(vec![])
+        };
+        let results: Vec<App> = options
             .search_prefix(&query)
             .map(|x| x.to_owned())
             .collect();

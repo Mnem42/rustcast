@@ -4,7 +4,7 @@
 > search bar that people can use to do many things, like opening apps,
 > calculators, quick-notes, etc.
 
-![RustCast Demo PreRelease V1](./docs/rustcast-v0-3-4.png)
+![RustCast Demo PreRelease V1](./docs/rustcast-v0-4-5.png)
 
 ## Installation:
 
@@ -75,6 +75,8 @@ will be fixed in the upcoming releases
       back, or just open an close the app again
 - [x] Select the options using arrow keys
 - [x] Tray icons (8/1/2026)
+- [x] Unit Conversions (19/1/2026) thanks to [Hriztam](https://github.com/hriztam)
+- [x] Emoji Searching (19/1/2026) Allows people to search for emojis through rustcast
 
 ### Planned:
 
@@ -101,6 +103,12 @@ All the people who starred my repo!!
 
 Those who sponsor me also get a free easter egg inside RustCast, so if you want
 a free easter egg, a dollar is all you need!
+
+And the updated list of contributors:
+
+<a href="https://github.com/unsecretised/rustcast/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=unsecretised/rustcast" />
+</a>
 
 ### Easter egg list:
 
