@@ -400,10 +400,6 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                     name_lc: "".to_string(),
                 });
             }
-            let new_length = tile.results.len();
-
-            let max_elem = min(5, new_length);
-
             if tile.results
                 == vec![App {
                     open_command: AppCommand::Message(Message::SwitchToPage(
@@ -415,7 +411,19 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                     name_lc: "clipboard".to_string(),
                 }]
             {
-                tile.page = Page::ClipboardHistory
+                tile.page = Page::ClipboardHistory;
+                tile.results = tile
+                    .clipboard_content
+                    .iter()
+                    .map(|x| x.to_app().to_owned())
+                    .collect();
+            }
+
+            let new_length = tile.results.len();
+            let max_elem = min(5, new_length);
+
+            if tile.results == vec![] {
+                tile.page = Page::ClipboardHistory;
             }
 
             if prev_size != new_length && tile.page != Page::ClipboardHistory {
