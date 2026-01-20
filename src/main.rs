@@ -39,18 +39,25 @@ fn main() -> iced::Result {
 
     {
         let log_path = get_temp_dir() + "/log.log";
+        let vv_log_path = get_temp_dir() + "/vv_log.log";
 
         create_config_file_if_not_exists(&log_path, &config).unwrap();
 
         let file = File::create(&log_path).expect("Failed to create logfile");
-
+        let vv_file = File::create(&vv_log_path).expect("Failed to create logfile");
+        
         let log_file = tracing_subscriber::fmt::layer()
             .with_ansi(false)
+            .with_filter(LevelFilter::DEBUG)
             .with_writer(file);
+        let vv_log_file = tracing_subscriber::fmt::layer()
+            .with_ansi(false)
+            .with_writer(vv_file);
         let console_out = tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO);
 
         let subscriber = tracing_subscriber::registry()
             .with(log_file)
+            .with(vv_file)
             .with(console_out);
 
         tracing::subscriber::set_global_default(subscriber).expect("Error initing tracing");
@@ -87,4 +94,4 @@ fn main() -> iced::Result {
     .subscription(Tile::subscription)
     .theme(Tile::theme)
     .run()
-}
+        }
