@@ -9,15 +9,14 @@ use tray_icon::{
         accelerator::Accelerator,
     },
 };
-
-use crate::{
-    app::{Message, tile::ExtSender},
-    utils::{open_settings, open_url},
-};
-
 use tokio::runtime::Runtime;
 
-/// This create a new menubar icon for the app
+use crate::{
+    app::{Message, tile::ExtSender}, 
+    cross_platform::{open_url, open_settings}
+};
+
+/// This creates a new menubar icon for the app
 pub fn menu_icon(hotkey: HotKey, sender: ExtSender) -> TrayIcon {
     let builder = TrayIconBuilder::new();
 

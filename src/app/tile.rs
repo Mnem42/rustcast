@@ -5,7 +5,7 @@ pub mod update;
 #[cfg(target_os = "windows")]
 use {
     windows::Win32::Foundation::HWND,
-    windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, SetForegroundWindow},
+    windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow,
 };
 
 use crate::app::apps::App;
@@ -13,7 +13,7 @@ use crate::app::tile::elm::default_app_paths;
 use crate::app::{ArrowKey, Message, Move, Page};
 use crate::clipboard::ClipBoardContentType;
 use crate::config::Config;
-use crate::utils::open_settings;
+use crate::cross_platform::open_settings;
 
 use arboard::Clipboard;
 use global_hotkey::hotkey::HotKey;
@@ -235,21 +235,21 @@ impl Tile {
         self.results = results;
     }
 
-    /// Gets the frontmost application to focus later.
-    pub fn capture_frontmost(&mut self) {
-        #[cfg(target_os = "macos")]
-        {
-            use objc2_app_kit::NSWorkspace;
+    // Unused, keeping it for now
+    // pub fn capture_frontmost(&mut self) {
+    //     #[cfg(target_os = "macos")]
+    //     {
+    //         use objc2_app_kit::NSWorkspace;
 
-            let ws = NSWorkspace::sharedWorkspace();
-            self.frontmost = ws.frontmostApplication();
-        };
+    //         let ws = NSWorkspace::sharedWorkspace();
+    //         self.frontmost = ws.frontmostApplication();
+    //     };
 
-        #[cfg(target_os = "windows")]
-        {
-            self.frontmost = Some(unsafe { GetForegroundWindow() });
-        }
-    }
+    //     #[cfg(target_os = "windows")]
+    //     {
+    //         self.frontmost = Some(unsafe { GetForegroundWindow() });
+    //     }
+    // }
 
     /// Restores the frontmost application.
     #[allow(deprecated)]

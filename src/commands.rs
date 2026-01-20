@@ -75,13 +75,14 @@ impl Function {
                 );
             }
 
+            #[cfg(target_os = "macos")]
             Function::OpenWebsite(url) => {
                 let open_url = if url.starts_with("http") {
                     url.to_owned()
                 } else {
                     format!("https://{}", url)
                 };
-                #[cfg(target_os = "macos")]
+                
                 thread::spawn(move || {
                     NSWorkspace::new().openURL(
                         &NSURL::URLWithString_relativeToURL(
@@ -120,7 +121,9 @@ impl Function {
                     ));
                 });
             }
+
             Function::Quit => std::process::exit(0),
+            _ => todo!("Actual handling for this situation")
         }
     }
 }

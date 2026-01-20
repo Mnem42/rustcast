@@ -47,31 +47,6 @@ pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
     None
 }
 
-/// Open the settings file with the system default editor
-pub fn open_settings() {
-    #[cfg(target_os = "macos")]
-    thread::spawn(move || {
-        NSWorkspace::new().openURL(&NSURL::fileURLWithPath(
-            &objc2_foundation::NSString::from_str(
-                &(std::env::var("HOME").unwrap_or("".to_string())
-                    + "/.config/rustcast/config.toml"),
-            ),
-        ));
-    });
-}
-
-/// Open a provided URL (Platform specific)
-pub fn open_url(url: &str) {
-    let url = url.to_owned();
-    #[cfg(target_os = "macos")]
-    thread::spawn(move || {
-        NSWorkspace::new().openURL(
-            &NSURL::URLWithString_relativeToURL(&objc2_foundation::NSString::from_str(&url), None)
-                .unwrap(),
-        );
-    });
-}
-
 pub fn get_config_installation_dir() -> PathBuf {
     if cfg!(target_os = "windows") {
         std::env::var("LOCALAPPDATA").unwrap().into()

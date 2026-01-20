@@ -58,6 +58,8 @@ pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
         settings.position = Position::Specific(pos);
     }
 
+    // id unused on windows, but not macos
+    #[cfg_attr(target_os = "windows", allow(unused))]
     let (id, open) = window::open(settings);
 
     let open: Task<iced::window::Id> = open.discard();
