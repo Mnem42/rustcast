@@ -98,45 +98,55 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
         }
 
         Message::ChangeFocus(key) => {
-            let u32_len = tile.results.len() as u32;
+            let len = match tile.page {
+                Page::ClipboardHistory => tile.clipboard_content.len() as u32,
+                Page::EmojiSearch => tile.emoji_apps.search_prefix(&tile.query_lc).count() as u32, // or tile.results.len()
+                _ => tile.results.len() as u32,
+            };
+
+            let old_focus_id = tile.focus_id.clone();
+
+            if len == 0 {
+                return Task::none();
+            }
+
             let change_by = match tile.page {
                 Page::EmojiSearch => 6,
                 _ => 1,
             };
-            if u32_len > 0 {
-                match (key, &tile.page) {
-                    (ArrowKey::Left, Page::EmojiSearch) => {
-                        tile.focus_id = (tile.focus_id + u32_len - 1) % u32_len;
-                        return operation::focus("results");
-                    }
-                    (ArrowKey::Right, Page::EmojiSearch) => {
-                        tile.focus_id = (tile.focus_id + u32_len + 1) % u32_len;
-                        return operation::focus("results");
-                    }
-                    (ArrowKey::Down, _) => tile.focus_id = (tile.focus_id + change_by) % u32_len,
-                    (ArrowKey::Up, _) => {
-                        tile.focus_id = (tile.focus_id + u32_len - change_by) % u32_len
-                    }
-                    _ => {}
-                }
 
+            let task = match (key, &tile.page) {
+                (ArrowKey::Down, _) => {
+                    tile.focus_id = (tile.focus_id + change_by) % len;
+                    Task::none()
+                }
+                (ArrowKey::Up, _) => {
+                    tile.focus_id = (tile.focus_id + len - change_by) % len;
+                    Task::none()
+                }
+                (ArrowKey::Left, Page::EmojiSearch) => {
+                    tile.focus_id = (tile.focus_id + len - 1) % len;
+                    operation::focus("results")
+                }
+                (ArrowKey::Right, Page::EmojiSearch) => {
+                    tile.focus_id = (tile.focus_id + 1) % len;
+                    operation::focus("results")
+                }
+                _ => Task::none(),
+            };
+
+            let direction = if tile.focus_id < old_focus_id { -1 } else { 1 };
+
+            Task::batch([
+                task,
                 operation::scroll_to(
                     "results",
                     AbsoluteOffset {
                         x: None,
-                        y: Some(
-                            tile.focus_id as f32
-                                * if tile.page == Page::EmojiSearch {
-                                    20.
-                                } else {
-                                    55.
-                                },
-                        ),
+                        y: Some((tile.focus_id as f32 * 5.) * direction as f32),
                     },
-                )
-            } else {
-                Task::none()
-            }
+                ),
+            ])
         }
 
         Message::OpenFocused => match tile.results.get(tile.focus_id as usize) {
@@ -451,28 +461,24 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                     .collect();
             }
 
-            let new_length = tile.results.len();
+            let new_length = if tile.page != Page::ClipboardHistory {
+                tile.results.len()
+            } else {
+                tile.clipboard_content.len()
+            };
             let max_elem = min(5, new_length);
 
-            if prev_size != new_length && tile.page != Page::ClipboardHistory {
+            if prev_size != new_length {
                 Task::batch([
                     window::resize(
                         id,
                         iced::Size {
                             width: WINDOW_WIDTH,
-                            height: ((max_elem * 70) + DEFAULT_WINDOW_HEIGHT as usize) as f32,
+                            height: ((max_elem * 55) + DEFAULT_WINDOW_HEIGHT as usize) as f32,
                         },
                     ),
                     Task::done(Message::ChangeFocus(ArrowKey::Left)),
                 ])
-            } else if tile.page == Page::ClipboardHistory {
-                window::resize(
-                    id,
-                    iced::Size {
-                        width: WINDOW_WIDTH,
-                        height: (350 + DEFAULT_WINDOW_HEIGHT as usize) as f32,
-                    },
-                )
             } else {
                 Task::none()
             }
