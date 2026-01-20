@@ -120,7 +120,7 @@ fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Vec<App> {
 
             let file_name_os = x.file_name();
             let file_name = file_name_os.into_string().unwrap_or_else(|e| {
-                tracing::error!("{}", e.to_string());
+                tracing::error!("Failed to to get file_name_os: {}", e.to_string());
                 exit(-1)
             });
             if !file_name.ends_with(".app") {
