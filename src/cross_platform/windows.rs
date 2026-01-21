@@ -75,7 +75,7 @@ fn get_apps_from_registry(apps: &mut Vec<App>) {
 }
 
 /// Recursively loads apps from a set of folders.
-fn get_apps_from_known_folder() -> impl ParallelIterator<Item = App> {
+fn get_apps_from_known_folder(exclude_patterns: &[glob::Pattern]) -> impl ParallelIterator<Item = App> {
     let paths = get_known_paths();
     use crate::{app::apps::AppCommand, commands::Function};
     use walkdir::WalkDir;
@@ -87,15 +87,23 @@ fn get_apps_from_known_folder() -> impl ParallelIterator<Item = App> {
             .par_bridge()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().is_some_and(|ext| ext == "exe"))
-            .map(|entry| {
+            .filter_map(|entry| {
                 let path = entry.path();
+
+                if exclude_patterns.iter().any(|x| x.matches_path(path)) {
+                    #[cfg(debug_assertions)]
+                    tracing::trace!("Executable skipped [kfolder]: {:?}", path.to_str());
+
+                    return None
+                }
+
                 let file_name = path.file_name().unwrap().to_string_lossy();
                 let name = file_name.replace(".exe", "");
 
                 #[cfg(debug_assertions)]
-                tracing::trace!("Executable loaded [kfolder]: {:?}", path.to_str());
+                tracing::trace!("Executable loaded  [kfolder]: {:?}", path.to_str());
 
-                App {
+                Some(App {
                     open_command: AppCommand::Function(Function::OpenApp(
                         path.to_string_lossy().to_string(),
                     )),
@@ -103,7 +111,7 @@ fn get_apps_from_known_folder() -> impl ParallelIterator<Item = App> {
                     name_lc: name.to_lowercase(),
                     icons: None,
                     desc: "Application".to_string(),
-                }
+                })
             })
     })
 }
@@ -133,7 +141,7 @@ fn get_windows_path(folder_id: &GUID) -> Option<PathBuf> {
 }
 
 /** Loads all installed windows apps */
-pub fn get_installed_windows_apps() -> Vec<App> {
+pub fn get_installed_windows_apps(exclude_patterns: &[glob::Pattern]) -> Vec<App> {
     use crate::utils::index_dirs_from_config;
 
     let mut apps = Vec::new();
@@ -142,7 +150,7 @@ pub fn get_installed_windows_apps() -> Vec<App> {
     get_apps_from_registry(&mut apps);
 
     tracing::debug!("Getting apps from known folder");
-    apps.par_extend(get_apps_from_known_folder());
+    apps.par_extend(get_apps_from_known_folder(exclude_patterns));
 
     tracing::debug!("Getting apps from config");
     index_dirs_from_config(&mut apps);
