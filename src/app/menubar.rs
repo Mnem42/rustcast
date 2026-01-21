@@ -1,7 +1,8 @@
 //! This has the menubar icon logic for the app
 
 use global_hotkey::hotkey::{Code, HotKey, Modifiers};
-use image::{DynamicImage, ImageReader};
+use image::DynamicImage;
+use tokio::runtime::Runtime;
 use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
     menu::{
@@ -12,12 +13,10 @@ use tray_icon::{
 
 use crate::{
     app::{Message, tile::ExtSender},
-    utils::{open_settings, open_url},
+    cross_platform::{open_settings, open_url},
 };
 
-use tokio::runtime::Runtime;
-
-/// This create a new menubar icon for the app
+/// This creates a new menubar icon for the app
 pub fn menu_icon(hotkey: HotKey, sender: ExtSender) -> TrayIcon {
     let builder = TrayIconBuilder::new();
 
@@ -64,11 +63,16 @@ fn get_image() -> DynamicImage {
 
     #[cfg(target_os = "windows")]
     {
-        DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(64, 64, image::Rgba([0, 0, 0, 255])))
+        DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(
+            64,
+            64,
+            image::Rgba([0, 0, 0, 255]),
+        ))
     }
 }
 
 fn init_event_handler(sender: ExtSender, hotkey_id: u32) {
+    tracing::debug!("Initing event handler");
     let runtime = Runtime::new().unwrap();
 
     MenuEvent::set_event_handler(Some(move |x: MenuEvent| {

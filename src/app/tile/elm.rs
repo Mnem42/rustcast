@@ -13,8 +13,8 @@ use iced::{Length::Fill, widget::text_input};
 use rayon::slice::ParallelSliceMut;
 
 use crate::app::tile::AppIndex;
-use crate::utils::get_installed_apps;
 use crate::styles::{contents_style, rustcast_text_input_style};
+use crate::utils::get_installed_apps;
 use crate::{
     app::{Message, Page, apps::App, default_settings, tile::Tile},
     config::Config,
@@ -58,15 +58,19 @@ pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
         settings.position = Position::Specific(pos);
     }
 
+    // id unused on windows, but not macos
+    #[cfg_attr(target_os = "windows", allow(unused))]
     let (id, open) = window::open(settings);
 
+    let open: Task<iced::window::Id> = open.discard();
+
     #[cfg(target_os = "macos")]
-    let open = open.discard().chain(window::run(id, |handle| {
+    open.chain(window::run(id, |handle| {
         macos::macos_window_config(&handle.window_handle().expect("Unable to get window handle"));
         transform_process_to_ui_element();
     }));
 
-    let mut options: Vec<App> = get_installed_apps(&config);
+    let mut options: Vec<App> = get_installed_apps(config);
 
     options.extend(config.shells.iter().map(|x| x.to_app()));
     options.extend(App::basic_apps());

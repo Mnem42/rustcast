@@ -1,5 +1,7 @@
 use {
-    crate::app::apps::App, rayon::prelude::*, std::path::PathBuf, windows::{
+    crate::app::apps::App,
+    rayon::prelude::*,
+    windows::{
         Win32::{
             System::Com::CoTaskMemFree,
             UI::{
@@ -11,8 +13,7 @@ use {
             },
         },
         core::GUID,
-    }
-
+    },
 };
 
 fn get_apps_from_registry(apps: &mut Vec<App>) {
@@ -30,17 +31,20 @@ fn get_apps_from_registry(apps: &mut Vec<App>) {
     // src: https://stackoverflow.com/questions/2864984/how-to-programatically-get-the-list-of-installed-programs/2892848#2892848
     registers.iter().for_each(|reg| {
         reg.enum_keys().for_each(|key| {
+            // Not debug only just because it doesn't run too often
+            tracing::trace!("App added [reg]: {:?}", key);
+
             // https://learn.microsoft.com/en-us/windows/win32/msi/uninstall-registry-key
             let name = key.unwrap();
             let key = reg.open_subkey(&name).unwrap();
-            let display_name = key.get_value("DisplayName").unwrap_or(OsString::new());
+            let display_name: OsString = key.get_value("DisplayName").unwrap_or_default();
 
             // they might be useful one day ?
             // let publisher = key.get_value("Publisher").unwrap_or(OsString::new());
             // let version = key.get_value("DisplayVersion").unwrap_or(OsString::new());
 
             // Trick, I saw on internet to point to the exe location..
-            let exe_path = key.get_value("DisplayIcon").unwrap_or(OsString::new());
+            let exe_path: OsString = key.get_value("DisplayIcon").unwrap_or_default();
             if exe_path.is_empty() {
                 return;
             }
@@ -62,7 +66,7 @@ fn get_apps_from_registry(apps: &mut Vec<App>) {
                     name: display_name.clone().into_string().unwrap(),
                     name_lc: display_name.clone().into_string().unwrap().to_lowercase(),
                     icons: None,
-                    desc: "TODO: Implement".to_string(),
+                    desc: "Application".to_string(),
                 })
             }
         });
@@ -70,43 +74,46 @@ fn get_apps_from_registry(apps: &mut Vec<App>) {
 }
 fn get_apps_from_known_folder(apps: &mut Vec<App>) {
     let paths = get_known_paths();
-    use walkdir::WalkDir;
     use crate::{app::apps::AppCommand, commands::Function};
+    use walkdir::WalkDir;
 
-
-    let found_apps: Vec<App> = paths.par_iter().flat_map(|path| {
-        WalkDir::new(path)
-            .follow_links(false)
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.path().extension().is_some_and(|ext| ext == "exe"))
-            .map(|entry| {
+    let found_apps: Vec<App> = paths
+        .par_iter()
+        .flat_map(|path| {
+            WalkDir::new(path)
+                .follow_links(false)
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().extension().is_some_and(|ext| ext == "exe"))
+                .map(|entry| {
                     let path = entry.path();
                     let file_name = path.file_name().unwrap().to_string_lossy();
                     let name = file_name.replace(".exe", "");
 
-                App {
+                    #[cfg(debug_assertions)]
+                    tracing::trace!("Executable loaded [kfolder]: {:?}", path.to_str());
+
+                    App {
                         open_command: AppCommand::Function(Function::OpenApp(
                             path.to_string_lossy().to_string(),
                         )),
                         name: name.clone(),
                         name_lc: name.to_lowercase(),
                         icons: None,
-                        desc: "TODO: Implement".to_string(),
+                        desc: "Application".to_string(),
                     }
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect();
 
-
-            }).collect::<Vec<_>>()
-        }).collect();
-
-        apps.extend(found_apps);
-
+    apps.extend(found_apps);
 }
 fn get_known_paths() -> Vec<String> {
     let paths = vec![
         get_windows_path(&FOLDERID_ProgramFiles).unwrap_or_default(),
         get_windows_path(&FOLDERID_ProgramFilesX86).unwrap_or_default(),
-        String::from(get_windows_path(&FOLDERID_LocalAppData).unwrap_or_default() + "\\Programs\\"),
+        (get_windows_path(&FOLDERID_LocalAppData).unwrap_or_default() + "\\Programs\\"),
     ];
     paths
 }
@@ -125,17 +132,18 @@ fn get_windows_path(folder_id: &GUID) -> Option<String> {
 pub fn get_installed_windows_apps() -> Vec<App> {
     use crate::utils::index_dirs_from_config;
 
-    use std::time::Instant;
-    let start = Instant::now();
-
     let mut apps = Vec::new();
+
+    tracing::debug!("Getting apps from registry");
     get_apps_from_registry(&mut apps);
+
+    tracing::debug!("Getting apps from known folder");
     get_apps_from_known_folder(&mut apps);
+
+    tracing::debug!("Getting apps from config");
     index_dirs_from_config(&mut apps);
 
-    let elapsed = start.elapsed();
-
-    println!("Took {:?}", elapsed);
+    tracing::debug!("Apps loaded ({} total count)", apps.len());
 
     apps
 }

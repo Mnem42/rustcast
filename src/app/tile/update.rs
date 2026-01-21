@@ -23,8 +23,6 @@ use crate::app::apps::AppCommand;
 use crate::app::default_settings;
 use crate::app::menubar::menu_icon;
 use crate::app::tile::AppIndex;
-#[cfg(target_os = "windows")]
-use crate::app::tile::elm::default_app_paths;
 use crate::app::{Message, Page, tile::Tile};
 
 #[cfg(target_os = "windows")]
@@ -45,6 +43,7 @@ use crate::{
 };
 
 pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
+    tracing::debug!("Handling update (message: {:?})", message);
     match message {
         Message::OpenWindow => {
             #[cfg(target_os = "macos")]
@@ -332,7 +331,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
 
             #[cfg(target_os = "windows")]
             let new_config: Config = toml::from_str(
-                &fs::read_to_string(get_config_installation_dir() + "/rustcast/config.toml")
+                &fs::read_to_string(get_config_installation_dir().join("rustcast/config.toml"))
                     .unwrap_or("".to_owned()),
             )
             .unwrap();

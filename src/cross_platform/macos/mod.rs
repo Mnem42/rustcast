@@ -111,7 +111,7 @@ fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Vec<App> {
         .into_par_iter()
         .filter_map(|x| {
             let file_type = x.file_type().unwrap_or_else(|e| {
-                log_error(&e.to_string());
+                tracing::error!("Failed to get file type: {}", e.to_string());
                 exit(-1)
             });
             if !file_type.is_dir() {
@@ -120,7 +120,7 @@ fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Vec<App> {
 
             let file_name_os = x.file_name();
             let file_name = file_name_os.into_string().unwrap_or_else(|e| {
-                log_error(e.to_str().unwrap_or(""));
+                tracing::error!("Failed to to get file_name_os: {}", e.to_string());
                 exit(-1)
             });
             if !file_name.ends_with(".app") {
@@ -129,7 +129,7 @@ fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Vec<App> {
 
             let path = x.path();
             let path_str = path.to_str().map(|x| x.to_string()).unwrap_or_else(|| {
-                log_error("Unable to get file_name");
+                tracing::error!("Unable to get file_name");
                 exit(-1)
             });
 
@@ -234,4 +234,27 @@ pub fn get_installed_macos_apps(config: &Config) -> Vec<App> {
     index_dirs_from_config(&mut apps);
 
     apps
+}
+
+/// Opens a provided URL
+pub fn open_url(url: &str) {
+    let url = url.to_owned();
+    thread::spawn(move || {
+        NSWorkspace::new().openURL(
+            &NSURL::URLWithString_relativeToURL(&objc2_foundation::NSString::from_str(&url), None)
+                .unwrap(),
+        );
+    });
+}
+
+/// Open the settings file with the system default editor
+pub fn open_settings() {
+    thread::spawn(move || {
+        NSWorkspace::new().openURL(&NSURL::fileURLWithPath(
+            &objc2_foundation::NSString::from_str(
+                &(std::env::var("HOME").unwrap_or("".to_string())
+                    + "/.config/rustcast/config.toml"),
+            ),
+        ));
+    });
 }
