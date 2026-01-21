@@ -110,8 +110,8 @@ impl Function {
                 }
             },
 
+            #[cfg(target_os = "macos")]
             Function::OpenPrefPane => {
-                #[cfg(target_os = "macos")]
                 thread::spawn(move || {
                     NSWorkspace::new().openURL(&NSURL::fileURLWithPath(
                         &objc2_foundation::NSString::from_str(
@@ -123,6 +123,10 @@ impl Function {
             }
 
             Function::Quit => std::process::exit(0),
+            f => {
+                // TODO: something in the UI to show this
+                tracing::error!("The function {:?} is unimplemented for this platform", f);
+            }
         }
     }
 }
