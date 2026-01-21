@@ -29,9 +29,9 @@ pub struct Config {
 
     #[serde(with = "patterns")]
     pub index_exclude_patterns: Vec<glob::Pattern>,
-    
+
     #[serde(with = "patterns")]
-    pub index_include_patterns: Vec<glob::Pattern>
+    pub index_include_patterns: Vec<glob::Pattern>,
 }
 
 impl Default for Config {
@@ -48,7 +48,7 @@ impl Default for Config {
             shells: vec![],
             index_dirs: vec![],
             index_exclude_patterns: vec![],
-            index_include_patterns: vec![]
+            index_include_patterns: vec![],
         }
     }
 }

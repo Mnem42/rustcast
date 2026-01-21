@@ -67,8 +67,6 @@ pub fn get_config_file_path() -> PathBuf {
 }
 use crate::config::Config;
 
-
-
 pub fn read_config_file(file_path: &Path) -> anyhow::Result<Config> {
     Ok(match std::fs::read_to_string(file_path) {
         Ok(a) => toml::from_str(&a)?,
@@ -187,12 +185,11 @@ pub fn index_dirs_from_config(apps: &mut Vec<App>) -> bool {
     true
 }
 
-pub fn parse_patterns(patterns: &[String]) -> Result<Vec<glob::Pattern>, glob::PatternError>{
+pub fn parse_patterns(patterns: &[String]) -> Result<Vec<glob::Pattern>, glob::PatternError> {
     Ok(patterns
         .iter()
         .map(|x| glob::Pattern::new(x))
-        .collect::<Result<_,_>>()?
-    )
+        .collect::<Result<_, _>>()?)
 }
 
 /// Use this to get installed apps
@@ -211,7 +208,7 @@ pub fn get_installed_apps(config: &Config) -> Vec<App> {
 
         get_installed_windows_apps(
             &config.index_exclude_patterns,
-            &config.index_include_patterns
+            &config.index_include_patterns,
         )
     }
 }

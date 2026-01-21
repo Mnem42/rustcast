@@ -1,5 +1,8 @@
 use {
-    crate::app::apps::App, rayon::prelude::*, std::path::PathBuf, windows::{
+    crate::app::apps::App,
+    rayon::prelude::*,
+    std::path::PathBuf,
+    windows::{
         Win32::{
             System::Com::CoTaskMemFree,
             UI::{
@@ -11,13 +14,13 @@ use {
             },
         },
         core::GUID,
-    }
+    },
 };
 
 /// Loads apps from the registry keys `SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall` and
 /// `SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall`. `apps` has the relvant items
 /// appended to it.
-/// 
+///
 /// Based on https://stackoverflow.com/questions/2864984
 fn get_apps_from_registry(apps: &mut Vec<App>) {
     use std::ffi::OsString;
@@ -75,12 +78,12 @@ fn get_apps_from_registry(apps: &mut Vec<App>) {
 }
 
 /// Recursively loads apps from a set of folders.
-/// 
+///
 /// [`exclude_patterns`] is a set of glob patterns to include, while [`include_patterns`] is a set of
 /// patterns to include ignoring [`exclude_patterns`].
 fn get_apps_from_known_folder(
-    exclude_patterns: &[glob::Pattern], 
-    include_patterns: &[glob::Pattern]
+    exclude_patterns: &[glob::Pattern],
+    include_patterns: &[glob::Pattern],
 ) -> impl ParallelIterator<Item = App> {
     let paths = get_known_paths();
     use crate::{app::apps::AppCommand, commands::Function};
@@ -96,14 +99,13 @@ fn get_apps_from_known_folder(
             .filter_map(|entry| {
                 let path = entry.path();
 
-                if 
-                    exclude_patterns.iter().any(|x| x.matches_path(path)) && 
-                    !include_patterns.iter().any(|x| x.matches_path(path))
+                if exclude_patterns.iter().any(|x| x.matches_path(path))
+                    && !include_patterns.iter().any(|x| x.matches_path(path))
                 {
                     #[cfg(debug_assertions)]
                     tracing::trace!("Executable skipped [kfolder]: {:?}", path.to_str());
 
-                    return None
+                    return None;
                 }
 
                 let file_name = path.file_name().unwrap().to_string_lossy();
@@ -130,7 +132,9 @@ fn get_known_paths() -> Vec<PathBuf> {
     let paths = vec![
         get_windows_path(&FOLDERID_ProgramFiles).unwrap_or_default(),
         get_windows_path(&FOLDERID_ProgramFilesX86).unwrap_or_default(),
-        (get_windows_path(&FOLDERID_LocalAppData).unwrap_or_default().join("Programs/")),
+        (get_windows_path(&FOLDERID_LocalAppData)
+            .unwrap_or_default()
+            .join("Programs/")),
     ];
     paths
 }
@@ -150,10 +154,13 @@ fn get_windows_path(folder_id: &GUID) -> Option<PathBuf> {
 }
 
 /// Gets windows apps
-/// 
+///
 /// When searching known folders, [`exclude_patterns`] is a set of glob patterns to include, while
 /// [`include_patterns`] is a set of patterns to include ignoring [`exclude_patterns`].
-pub fn get_installed_windows_apps(exclude_patterns: &[glob::Pattern], include_patterns: &[glob::Pattern]) -> Vec<App> {
+pub fn get_installed_windows_apps(
+    exclude_patterns: &[glob::Pattern],
+    include_patterns: &[glob::Pattern],
+) -> Vec<App> {
     use crate::utils::index_dirs_from_config;
 
     let mut apps = Vec::new();
@@ -162,7 +169,10 @@ pub fn get_installed_windows_apps(exclude_patterns: &[glob::Pattern], include_pa
     get_apps_from_registry(&mut apps);
 
     tracing::debug!("Getting apps from known folder");
-    apps.par_extend(get_apps_from_known_folder(exclude_patterns, include_patterns));
+    apps.par_extend(get_apps_from_known_folder(
+        exclude_patterns,
+        include_patterns,
+    ));
 
     tracing::debug!("Getting apps from config");
     index_dirs_from_config(&mut apps);
