@@ -35,8 +35,7 @@ fn main() -> iced::Result {
                 eprintln!("{}", e);
                 std::process::exit(1);
             }
-        }
-        else {
+        } else {
             eprintln!("{}", e);
             std::process::exit(1);
         }

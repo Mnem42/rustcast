@@ -1,9 +1,11 @@
 //! This has all the utility functions that rustcast uses
 use std::{
-    fs::{self}, io, path::{Path, PathBuf}, thread
+    fs::{self},
+    io,
+    path::{Path, PathBuf},
+    thread,
 };
 
-use glob::{GlobError, GlobResult};
 use iced::widget::image::Handle;
 #[cfg(target_os = "macos")]
 use icns::IconFamily;
@@ -75,8 +77,8 @@ pub fn read_config_file(file_path: &Path) -> anyhow::Result<Config> {
                 toml::to_string(&cfg).unwrap_or_else(|x| x.to_string()),
             )?;
             Ok(cfg)
-        },
-        Err(e) => Err(e.into())
+        }
+        Err(e) => Err(e.into()),
     }
 }
 
@@ -168,10 +170,10 @@ pub fn index_dirs_from_config(apps: &mut Vec<App>) -> bool {
 }
 
 pub fn parse_patterns(patterns: &[String]) -> Result<Vec<glob::Pattern>, glob::PatternError> {
-    Ok(patterns
+    patterns
         .iter()
         .map(|x| glob::Pattern::new(x))
-        .collect::<Result<_, _>>()?)
+        .collect::<Result<_, _>>()
 }
 
 /// Use this to get installed apps

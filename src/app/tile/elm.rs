@@ -14,7 +14,7 @@ use rayon::slice::ParallelSliceMut;
 
 use crate::app::tile::AppIndex;
 use crate::styles::{contents_style, rustcast_text_input_style};
-use crate::utils::{get_installed_apps, parse_patterns};
+use crate::utils::get_installed_apps;
 use crate::{
     app::{Message, Page, apps::App, default_settings, tile::Tile},
     config::Config,
