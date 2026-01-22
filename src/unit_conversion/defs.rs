@@ -1,6 +1,5 @@
 use crate::unit_conversion::UnitCategory;
 
-
 #[derive(Debug, Clone, Copy)]
 pub struct UnitDef {
     pub name: &'static str,

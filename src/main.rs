@@ -106,7 +106,7 @@ fn main() -> iced::Result {
         tile::update::handle_update,
         tile::elm::view,
     )
-        .subscription(Tile::subscription)
-        .theme(Tile::theme)
-        .run()
+    .subscription(Tile::subscription)
+    .theme(Tile::theme)
+    .run()
 }

@@ -104,7 +104,9 @@ fn init_event_handler(sender: ExtSender, hotkey_id: u32) {
                 });
             }
             "open_help_page" => {
-                if let Err(e) = open::that("https://github.com/unsecretised/rustcast/discussions/new?category=q-a") {
+                if let Err(e) = open::that(
+                    "https://github.com/unsecretised/rustcast/discussions/new?category=q-a",
+                ) {
                     tracing::error!("Error opening url: {}", e)
                 }
             }

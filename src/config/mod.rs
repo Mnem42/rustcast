@@ -1,8 +1,5 @@
 //! This is the config file type definitions for rustcast
-use std::{
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use iced::{Font, font::Family, theme::Custom};
 use serde::{Deserialize, Serialize};

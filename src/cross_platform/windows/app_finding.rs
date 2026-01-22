@@ -6,9 +6,9 @@ use {
         Win32::{
             System::Com::CoTaskMemFree,
             UI::Shell::{
-                    FOLDERID_LocalAppData, FOLDERID_ProgramFiles, FOLDERID_ProgramFilesX86,
-                    KF_FLAG_DEFAULT, SHGetKnownFolderPath,
-                },
+                FOLDERID_LocalAppData, FOLDERID_ProgramFiles, FOLDERID_ProgramFilesX86,
+                KF_FLAG_DEFAULT, SHGetKnownFolderPath,
+            },
         },
         core::GUID,
     },
