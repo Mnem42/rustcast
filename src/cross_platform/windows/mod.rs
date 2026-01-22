@@ -1,21 +1,4 @@
-use {
-    crate::app::apps::App,
-    rayon::prelude::*,
-    std::path::PathBuf,
-    windows::{
-        Win32::{
-            System::Com::CoTaskMemFree,
-            UI::{
-                Shell::{
-                    FOLDERID_LocalAppData, FOLDERID_ProgramFiles, FOLDERID_ProgramFilesX86,
-                    KF_FLAG_DEFAULT, SHGetKnownFolderPath,
-                },
-                WindowsAndMessaging::GetCursorPos,
-            },
-        },
-        core::GUID,
-    },
-};
+use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
 
 pub mod app_finding;
 

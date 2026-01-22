@@ -5,13 +5,10 @@ use {
     windows::{
         Win32::{
             System::Com::CoTaskMemFree,
-            UI::{
-                Shell::{
+            UI::Shell::{
                     FOLDERID_LocalAppData, FOLDERID_ProgramFiles, FOLDERID_ProgramFilesX86,
                     KF_FLAG_DEFAULT, SHGetKnownFolderPath,
                 },
-                WindowsAndMessaging::GetCursorPos,
-            },
         },
         core::GUID,
     },

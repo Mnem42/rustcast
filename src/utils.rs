@@ -6,7 +6,6 @@ use std::{
     thread,
 };
 
-use iced::widget::image::Handle;
 #[cfg(target_os = "macos")]
 use icns::IconFamily;
 
@@ -17,7 +16,7 @@ use {
 };
 
 #[cfg(target_os = "windows")]
-use {std::process::Command};
+use std::process::Command;
 
 use crate::{
     app::apps::{App, AppCommand},

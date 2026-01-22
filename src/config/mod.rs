@@ -1,12 +1,16 @@
 //! This is the config file type definitions for rustcast
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::Arc,
+};
 
-use iced::{Font, font::Family, theme::Custom, widget::image::Handle};
+use iced::{Font, font::Family, theme::Custom};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     app::apps::{App, AppCommand},
-    commands::Function, cross_platform::get_img_handle
+    commands::Function,
+    cross_platform::get_img_handle,
 };
 
 #[cfg(target_os = "macos")]
