@@ -33,8 +33,8 @@ use crate::clipboard::ClipBoardContentType;
 use crate::commands::Function;
 use crate::config::Config;
 use crate::unit_conversion;
-use crate::utils::get_installed_apps;
 
+use crate::utils::index_installed_apps;
 #[cfg(target_os = "macos")]
 use crate::{
     cross_platform::macos::focus_this_app,
@@ -336,16 +336,22 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             )
             .unwrap();
 
-            let mut new_options: Vec<App> = get_installed_apps(&new_config);
+            match index_installed_apps(&new_config){
+                Ok(mut new_options) => {
+                    new_options.extend(new_config.shells.iter().map(|x| x.to_app()));
+                    new_options.extend(App::basic_apps());
+                    new_options.par_sort_by_key(|x| x.name.len());
 
-            new_options.extend(new_config.shells.iter().map(|x| x.to_app()));
-            new_options.extend(App::basic_apps());
-            new_options.par_sort_by_key(|x| x.name.len());
-
-            tile.theme = new_config.theme.to_owned().into();
-            tile.config = new_config;
-            tile.options = AppIndex::from_apps(new_options);
-            Task::none()
+                    tile.theme = new_config.theme.to_owned().into();
+                    tile.config = new_config;
+                    tile.options = AppIndex::from_apps(new_options);
+                    Task::none()
+                }
+                Err(e) => {
+                    tracing::error!("Error reindexing apps: {}", e);
+                    Task::none()
+                }
+            }
         }
 
         Message::KeyPressed(hk_id) => {

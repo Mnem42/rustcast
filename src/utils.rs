@@ -8,6 +8,7 @@ use std::{
 
 #[cfg(target_os = "macos")]
 use icns::IconFamily;
+use rayon::prelude::*;
 
 #[cfg(target_os = "macos")]
 use {
@@ -40,6 +41,57 @@ pub fn get_config_file_path() -> PathBuf {
         home.join(".config/rustcast/config.toml")
     }
 }
+
+/// Recursively loads apps from a set of folders.
+///
+/// [`exclude_patterns`] is a set of glob patterns to include, while [`include_patterns`] is a set of
+/// patterns to include ignoring [`exclude_patterns`].
+fn search_dir(
+    path: impl AsRef<Path>,
+    exclude_patterns: &[glob::Pattern],
+    include_patterns: &[glob::Pattern],
+    max_depth: usize,
+) -> impl ParallelIterator<Item = App> {
+    use crate::{app::apps::AppCommand, commands::Function};
+    use walkdir::WalkDir;
+
+    WalkDir::new(path.as_ref())
+        .follow_links(false)
+        .max_depth(max_depth)
+        .into_iter()
+        .par_bridge()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "exe"))
+        .filter_map(|entry| {
+            let path = entry.path();
+
+            if exclude_patterns.iter().any(|x| x.matches_path(path))
+                && !include_patterns.iter().any(|x| x.matches_path(path))
+            {
+                #[cfg(debug_assertions)]
+                tracing::trace!("Executable skipped [kfolder]: {:?}", path.to_str());
+
+                return None;
+            }
+
+            let file_name = path.file_name().unwrap().to_string_lossy();
+            let name = file_name.replace(".exe", "");
+
+            #[cfg(debug_assertions)]
+            tracing::trace!("Executable loaded  [kfolder]: {:?}", path.to_str());
+
+            Some(App {
+                open_command: AppCommand::Function(Function::OpenApp(
+                    path.to_string_lossy().to_string(),
+                )),
+                name: name.clone(),
+                name_lc: name.to_lowercase(),
+                icons: None,
+                desc: "Application".to_string(),
+            })
+        })
+}
+
 use crate::config::Config;
 
 pub fn read_config_file(file_path: &Path) -> anyhow::Result<Config> {
@@ -85,106 +137,66 @@ pub fn open_application(path: &str) {
     });
 }
 
-#[allow(unused)]
-pub fn index_dirs_from_config(apps: &mut Vec<App>) -> bool {
-    let path = get_config_file_path();
-    let config = read_config_file(path.as_path());
-
-    // if config is not valid return false otherwise unwrap config so it is usable
-    let config = match config {
-        Ok(config) => config,
-        Err(err) => {
-            println!("Error reading config file: {}", err);
-            return false;
-        }
-    };
-
-    if config.index_dirs.is_empty() {
-        return false;
-    }
-
-    config.index_dirs.clone().iter().for_each(|dir| {
-        // check if dir exists
-        if !Path::new(dir).exists() {
-            println!("Directory {} does not exist", dir);
-            return;
-        }
-
-        let paths = fs::read_dir(dir).unwrap();
-
-        for path in paths {
-            let path = path.unwrap().path();
-            let metadata = fs::metadata(&path).unwrap();
-
-            #[cfg(target_os = "windows")]
-            let is_executable =
-                metadata.is_file() && path.extension().and_then(|s| s.to_str()) == Some("exe");
-
-            #[cfg(target_os = "macos")]
-            let is_executable = {
-                (metadata.is_file() && (metadata.permissions().mode() & 0o111 != 0))
-                    || path.extension().and_then(|s| s.to_str()) == Some("app")
-            };
-
-            if is_executable {
-                let display_name = path.file_name().unwrap().to_string_lossy().to_string();
-                apps.push(App {
-                    open_command: AppCommand::Function(Function::OpenApp(
-                        path.to_string_lossy().to_string(),
-                    )),
-                    name: display_name.clone(),
-                    desc: "Application".to_string(),
-                    name_lc: display_name.clone().to_lowercase(),
-                    icons: None,
-                });
-            }
-        }
-    });
-
-    true
-}
-
-/// Use this to get installed apps
-pub fn get_installed_apps(config: &Config) -> Vec<App> {
+pub fn index_installed_apps(config: &Config) -> anyhow::Result<Vec<App>> {
     tracing::debug!("Indexing installed apps");
     tracing::debug!("Exclude patterns: {:?}", &config.index_exclude_patterns);
     tracing::debug!("Include patterns: {:?}", &config.index_include_patterns);
 
-    #[cfg(target_os = "macos")]
-    {
-        let start = time::Instant::now();
+    let path = get_config_file_path();
+    let config = read_config_file(path.as_path())?;
 
-        let res = get_installed_macos_apps(config);
-
-        let end = time::Instant::now();
-
-        tracing::info!(
-            "Finished indexing apps (t = {}s)",
-            (end - start).as_secs_f32()
-        );
-
-        res
+    if config.index_dirs.is_empty() {
+        tracing::debug!("No extra index dirs provided")
     }
 
     #[cfg(target_os = "windows")]
     {
-        use crate::cross_platform::windows::app_finding::get_installed_windows_apps;
-        use std::time;
+        use std::time::Instant;
 
-        let start = time::Instant::now();
+        use crate::cross_platform::windows::app_finding::get_apps_from_registry;
+        use crate::cross_platform::windows::app_finding::get_known_paths;
 
-        let res = get_installed_windows_apps(
-            &config.index_exclude_patterns,
-            &config.index_include_patterns,
-        );
+        let start = Instant::now();
 
-        let end = time::Instant::now();
+        let mut reg_apps = Vec::new();
+        get_apps_from_registry(&mut reg_apps);
 
-        tracing::info!(
-            "Finished indexing apps (t = {}s)",
-            (end - start).as_secs_f32()
-        );
+        let res = config.index_dirs
+                .par_iter()
+                .chain(get_known_paths().par_iter())
+                .flat_map(|x| search_dir(
+                    x, 
+                    &config.index_exclude_patterns, 
+                    &config.index_exclude_patterns, 
+                    3
+                ))
+                .chain(reg_apps.into_par_iter())
+                .collect();
+        
+        let end = Instant::now();
+        tracing::info!("Finished indexing apps (t = {}s)", (end - start).as_secs_f32());
 
-        res
+        Ok(res)
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let start = Instant::now();
+
+        let res = config.index_dirs
+            .par_iter()
+            .chain(get_known_paths().par_iter())
+            .flat_map(|x| search_dir(
+                x, 
+                &config.index_exclude_patterns, 
+                &config.index_exclude_patterns, 
+                3
+            ))
+            .collect();
+        
+        let end = Instant::now();
+        tracing::info!("Finished indexing apps (t = {}s)", (end - start).as_secs_f32());
+
+        Ok(res)
     }
 }

@@ -28,7 +28,7 @@ pub struct Config {
     pub haptic_feedback: bool,
     pub show_trayicon: bool,
     pub shells: Vec<Shelly>,
-    pub index_dirs: Vec<String>,
+    pub index_dirs: Vec<PathBuf>,
 
     #[serde(with = "patterns")]
     pub index_exclude_patterns: Vec<glob::Pattern>,

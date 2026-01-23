@@ -16,7 +16,7 @@ use rayon::slice::ParallelSliceMut;
 use crate::app;
 use crate::app::tile::AppIndex;
 use crate::styles::{contents_style, rustcast_text_input_style};
-use crate::utils::get_installed_apps;
+use crate::utils::index_installed_apps;
 use crate::{
     app::{Message, Page, apps::App, default_settings, tile::Tile},
     config::Config,
@@ -74,7 +74,14 @@ pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
         Message::OpenWindow
     }));
 
-    let mut options = get_installed_apps(config);
+    let options = index_installed_apps(config);
+
+    if let Err(ref e) = options {
+        tracing::error!("Error indexing apps: {e}")
+    }
+
+    // Still try to load the rest
+    let mut options = options.unwrap_or(Vec::new());
 
     options.extend(config.shells.iter().map(|x| x.to_app()));
     options.extend(App::basic_apps());
