@@ -33,7 +33,7 @@
 
 **Community:** https://discord.gg/bDfNYPbnC5
 
-![RustCast Demo PreRelease V1](./docs/rustcast-v0-4-5.png)
+![RustCast Demo PreRelease V1](./docs/rustcast-v0-5-0.png)
 ## Installation:
 
 ### Via Homebrew:
