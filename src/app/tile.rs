@@ -10,7 +10,7 @@ use crate::app::tile::elm::default_app_paths;
 use crate::app::{ArrowKey, Message, Move, Page};
 use crate::clipboard::ClipBoardContentType;
 use crate::config::Config;
-use crate::cross_platform::open_settings;
+use crate::platform::open_settings;
 
 use arboard::Clipboard;
 use global_hotkey::hotkey::HotKey;

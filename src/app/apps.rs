@@ -17,7 +17,7 @@ use crate::{
 };
 
 #[cfg(target_os = "macos")]
-use crate::cross_platform::macos;
+use crate::platform::macos;
 
 /// This tells each "App" what to do when it is clicked, whether it is a function, a message, or a display
 #[allow(dead_code)]

@@ -37,7 +37,7 @@ use crate::utils::get_installed_apps;
 use crate::utils::is_valid_url;
 
 #[cfg(target_os = "macos")]
-use crate::cross_platform::macos::{
+use crate::platform::macos::{
     self,
     haptics::{HapticPattern, perform_haptic},
 };
@@ -355,7 +355,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                     {
                         // get normal settings and modify position
 
-                        use crate::cross_platform::windows::open_on_focused_monitor;
+                        use crate::platform::windows::open_on_focused_monitor;
                         use iced::window::Position;
 
                         let pos = open_on_focused_monitor();

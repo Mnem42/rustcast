@@ -7,7 +7,7 @@ mod styles;
 mod unit_conversion;
 mod utils;
 
-mod cross_platform;
+mod platform;
 
 use std::env::temp_dir;
 use std::fs::File;
@@ -24,7 +24,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 fn main() -> iced::Result {
     #[cfg(target_os = "macos")]
-    cross_platform::macos::set_activation_policy_accessory();
+    platform::macos::set_activation_policy_accessory();
 
     let file_path = get_config_file_path();
     let config = read_config_file(&file_path).unwrap();

@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[cfg(target_os = "macos")]
-use crate::cross_platform::macos;
+use crate::platform::macos;
 
 /// The main config struct (effectively the config file's "schema")
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -179,10 +179,10 @@ impl Shelly {
         let self_clone = self.clone();
         let icon = self_clone.icon_path.map(|x| {
             let x = x.replace("~", &std::env::var("HOME").unwrap());
+
             #[cfg(target_os = "macos")]
-            if x.ends_with(".icns") {
-                return macos::handle_from_icns(Path::new(&x))
-            }
+            return macos::handle_from_icns(Path::new(&x))
+                .unwrap_or(Handle::from_path(Path::new(&x)));
 
             Handle::from_path(Path::new(&x))
         });

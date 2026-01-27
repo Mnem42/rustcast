@@ -13,7 +13,7 @@ use tray_icon::{
 
 use crate::{
     app::{Message, tile::ExtSender},
-    cross_platform::{open_settings, open_url},
+    platform::{open_settings, open_url},
 };
 
 /// This creates a new menubar icon for the app

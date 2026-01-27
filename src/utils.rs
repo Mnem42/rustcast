@@ -7,12 +7,12 @@ use std::{
 
 #[cfg(target_os = "macos")]
 use {
-    crate::cross_platform::macos::get_installed_macos_apps, objc2_app_kit::NSWorkspace,
+    crate::platform::macos::get_installed_macos_apps, objc2_app_kit::NSWorkspace,
     objc2_foundation::NSURL, std::os::unix::fs::PermissionsExt,
 };
 
 #[cfg(target_os = "windows")]
-use {crate::cross_platform::windows::get_installed_windows_apps, std::process::Command};
+use {crate::platform::windows::get_installed_windows_apps, std::process::Command};
 
 use crate::{
     app::apps::{App, AppCommand},
