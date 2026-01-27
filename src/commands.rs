@@ -123,6 +123,9 @@ impl Function {
             }
 
             Function::Quit => std::process::exit(0),
+
+            // No unimplemented cases on macos
+            #[cfg_attr(target_os = "macos", allow(unreachable))]
             _ => todo!("Actual handling for this situation"),
         }
     }

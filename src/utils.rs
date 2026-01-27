@@ -27,6 +27,8 @@ use crate::{
 pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
     #[cfg(target_os = "macos")]
     {
+        use image::RgbaImage;
+
         let data = std::fs::read(path).ok()?;
         let family = IconFamily::read(std::io::Cursor::new(&data)).ok()?;
 
@@ -38,7 +40,8 @@ pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
             icon.height() as u32,
             icon.data().to_vec(),
         )?;
-        Some(Handle::from_rgba(
+        
+        return Some(Handle::from_rgba(
             image.width(),
             image.height(),
             image.into_raw(),

@@ -65,9 +65,10 @@ pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
     let open: Task<iced::window::Id> = open.discard();
 
     #[cfg(target_os = "macos")]
-    open.chain(window::run(id, |handle| {
+    let open = open.chain(window::run(id, move |handle| {
         macos::macos_window_config(&handle.window_handle().expect("Unable to get window handle"));
         transform_process_to_ui_element();
+        id
     }));
 
     let mut options: Vec<App> = get_installed_apps(config);

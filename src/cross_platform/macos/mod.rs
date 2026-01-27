@@ -3,25 +3,34 @@
 
 pub mod haptics;
 
-use crate::app::apps::{App, AppCommand};
-use crate::commands::Function;
-use crate::config::Config;
-use crate::utils::index_dirs_from_config;
-use crate::utils::{handle_from_icns, log_error, log_error_and_exit};
+use crate::{
+    app::apps::{App, AppCommand},
+    commands::Function,
+    config::Config,
+    utils::{index_dirs_from_config, handle_from_icns}
+};
+
 use {
     iced::wgpu::rwh::RawWindowHandle,
     iced::wgpu::rwh::WindowHandle,
     objc2::MainThreadMarker,
     objc2::rc::Retained,
-    objc2_app_kit::NSView,
-    objc2_app_kit::{NSApp, NSApplicationActivationPolicy},
-    objc2_app_kit::{NSFloatingWindowLevel, NSWindowCollectionBehavior},
+    objc2_app_kit::{
+        NSView,
+        NSApp, 
+        NSApplicationActivationPolicy,
+        NSFloatingWindowLevel, 
+        NSWindowCollectionBehavior
+    },
+    objc2_foundation::NSURL
 };
-
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::exit;
+use std::{
+    fs, thread,
+    path::{Path, PathBuf},
+    process::exit
+};
+use objc2_app_kit::NSWorkspace;
+use rayon::prelude::*;
 
 /// This sets the activation policy of the app to Accessory, allowing rustcast to be visible ontop
 /// of fullscreen apps
@@ -98,36 +107,45 @@ pub fn transform_process_to_ui_element() -> u32 {
     }
 }
 
-fn get_installed_apps(dir: impl AsRef<Path>, store_icons: bool) -> Vec<App> {
-    let entries: Vec<_> = fs::read_dir(dir.as_ref())
-        .unwrap_or_else(|x| {
-            log_error_and_exit(&x.to_string());
-            exit(-1)
-        })
-        .filter_map(|x| x.ok())
-        .collect();
+fn get_installed_apps(dir: impl AsRef<Path> + Sync + Send, store_icons: bool) -> Vec<App> {
+    let entries = fs::read_dir(dir.as_ref());
+
+    if let Err(ref e) = entries {
+        tracing::error!("Error reading {} dir: {}", dir.as_ref().display(), e);
+        return vec![];
+    };
 
     entries
-        .into_par_iter()
-        .filter_map(|x| {
-            let file_type = x.file_type().unwrap_or_else(|e| {
-                tracing::error!("Failed to get file type: {}", e.to_string());
-                exit(-1)
-            });
-            if !file_type.is_dir() {
-                return None;
-            }
+        .unwrap()
+        .par_bridge()
+        .filter_map(|x| 
+            x
+                .inspect_err(|e| tracing::error!("Error reading {} dir: {}", dir.as_ref().display(), e))
+                .ok()
+        )
+        .filter_map(|entry| {
+            let file_type = entry
+                .file_type()
+                .inspect_err(|e|
+                    tracing::error!("Error getting file type of {}: {e}", entry.path().display())
+                )
+                .ok()?;
+            
+            if !file_type.is_dir() { return None }
 
-            let file_name_os = x.file_name();
-            let file_name = file_name_os.into_string().unwrap_or_else(|e| {
-                tracing::error!("Failed to to get file_name_os: {}", e.to_string());
-                exit(-1)
-            });
+            let file_name_os = entry.file_name();
+            let file_name = file_name_os
+                .into_string()
+                .inspect_err(|e| 
+                    tracing::error!("Failed to to get file_name_os: {}", e.to_string_lossy())
+                )
+                .ok()?;
+
             if !file_name.ends_with(".app") {
                 return None;
             }
 
-            let path = x.path();
+            let path = entry.path();
             let path_str = path.to_str().map(|x| x.to_string()).unwrap_or_else(|| {
                 tracing::error!("Unable to get file_name");
                 exit(-1)

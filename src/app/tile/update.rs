@@ -34,23 +34,23 @@ use crate::commands::Function;
 use crate::config::Config;
 use crate::unit_conversion;
 use crate::utils::get_installed_apps;
-
 use crate::utils::is_valid_url;
+
 #[cfg(target_os = "macos")]
-use crate::{
-    cross_platform::macos::focus_this_app,
-    cross_platform::macos::haptics::{HapticPattern, perform_haptic},
+use crate::cross_platform::macos::{
+    self,
+    focus_this_app,
+    haptics::{HapticPattern, perform_haptic},
 };
 
 pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
     tracing::debug!("Handling update (message: {:?})", message);
     match message {
         Message::OpenWindow => {
+            tile.capture_frontmost();
             #[cfg(target_os = "macos")]
-            {
-                tile.capture_frontmost();
-                focus_this_app();
-            }
+            macos::focus_this_app();
+
             tile.focused = true;
             tile.visible = true;
             Task::none()

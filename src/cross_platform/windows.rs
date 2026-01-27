@@ -13,6 +13,7 @@ use {
         core::GUID,
     }
 };
+use rayon::prelude::*;
 
 /// Loads apps from the registry keys `SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall` and
 /// `SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall`. `apps` has the relvant items
@@ -142,7 +143,7 @@ pub fn get_installed_windows_apps() -> Vec<App> {
     get_apps_from_registry(&mut apps);
 
     tracing::debug!("Getting apps from known folder");
-    get_apps_from_known_folder(&mut apps);
+    apps.par_extend(get_apps_from_known_folder());
 
     tracing::debug!("Getting apps from config");
     index_dirs_from_config(&mut apps);
