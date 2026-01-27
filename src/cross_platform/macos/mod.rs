@@ -7,30 +7,28 @@ use crate::{
     app::apps::{App, AppCommand},
     commands::Function,
     config::Config,
-    utils::{index_dirs_from_config, handle_from_icns}
+    utils::{handle_from_icns, index_dirs_from_config},
 };
 
+use objc2_app_kit::NSWorkspace;
+use rayon::prelude::*;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::exit,
+    thread,
+};
 use {
     iced::wgpu::rwh::RawWindowHandle,
     iced::wgpu::rwh::WindowHandle,
     objc2::MainThreadMarker,
     objc2::rc::Retained,
     objc2_app_kit::{
-        NSView,
-        NSApp, 
-        NSApplicationActivationPolicy,
-        NSFloatingWindowLevel, 
-        NSWindowCollectionBehavior
+        NSApp, NSApplicationActivationPolicy, NSFloatingWindowLevel, NSView,
+        NSWindowCollectionBehavior,
     },
-    objc2_foundation::NSURL
+    objc2_foundation::NSURL,
 };
-use std::{
-    fs, thread,
-    path::{Path, PathBuf},
-    process::exit
-};
-use objc2_app_kit::NSWorkspace;
-use rayon::prelude::*;
 
 /// This sets the activation policy of the app to Accessory, allowing rustcast to be visible ontop
 /// of fullscreen apps
@@ -118,27 +116,30 @@ fn get_installed_apps(dir: impl AsRef<Path> + Sync + Send, store_icons: bool) ->
     entries
         .unwrap()
         .par_bridge()
-        .filter_map(|x| 
-            x
-                .inspect_err(|e| tracing::error!("Error reading {} dir: {}", dir.as_ref().display(), e))
-                .ok()
-        )
+        .filter_map(|x| {
+            x.inspect_err(|e| {
+                tracing::error!("Error reading {} dir: {}", dir.as_ref().display(), e)
+            })
+            .ok()
+        })
         .filter_map(|entry| {
             let file_type = entry
                 .file_type()
-                .inspect_err(|e|
+                .inspect_err(|e| {
                     tracing::error!("Error getting file type of {}: {e}", entry.path().display())
-                )
+                })
                 .ok()?;
-            
-            if !file_type.is_dir() { return None }
+
+            if !file_type.is_dir() {
+                return None;
+            }
 
             let file_name_os = entry.file_name();
             let file_name = file_name_os
                 .into_string()
-                .inspect_err(|e| 
+                .inspect_err(|e| {
                     tracing::error!("Failed to to get file_name_os: {}", e.to_string_lossy())
-                )
+                })
                 .ok()?;
 
             if !file_name.ends_with(".app") {

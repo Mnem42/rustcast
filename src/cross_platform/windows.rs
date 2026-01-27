@@ -1,5 +1,8 @@
+use rayon::prelude::*;
 use {
-    crate::app::apps::App, rayon::prelude::*, std::path::PathBuf, windows::{
+    crate::app::apps::App,
+    std::path::PathBuf,
+    windows::{
         Win32::{
             System::Com::CoTaskMemFree,
             UI::{
@@ -11,14 +14,13 @@ use {
             },
         },
         core::GUID,
-    }
+    },
 };
-use rayon::prelude::*;
 
 /// Loads apps from the registry keys `SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall` and
 /// `SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall`. `apps` has the relvant items
 /// appended to it.
-/// 
+///
 /// Based on https://stackoverflow.com/questions/2864984
 fn get_apps_from_registry(apps: &mut Vec<App>) {
     use std::ffi::OsString;
@@ -114,7 +116,9 @@ fn get_known_paths() -> Vec<PathBuf> {
     let paths = vec![
         get_windows_path(&FOLDERID_ProgramFiles).unwrap_or_default(),
         get_windows_path(&FOLDERID_ProgramFilesX86).unwrap_or_default(),
-        (get_windows_path(&FOLDERID_LocalAppData).unwrap_or_default().join("Programs/")),
+        (get_windows_path(&FOLDERID_LocalAppData)
+            .unwrap_or_default()
+            .join("Programs/")),
     ];
     paths
 }

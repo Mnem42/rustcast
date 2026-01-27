@@ -38,8 +38,7 @@ use crate::utils::is_valid_url;
 
 #[cfg(target_os = "macos")]
 use crate::cross_platform::macos::{
-    self,
-    focus_this_app,
+    self, focus_this_app,
     haptics::{HapticPattern, perform_haptic},
 };
 

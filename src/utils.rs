@@ -40,12 +40,12 @@ pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
             icon.height() as u32,
             icon.data().to_vec(),
         )?;
-        
+
         return Some(Handle::from_rgba(
             image.width(),
             image.height(),
             image.into_raw(),
-        ))
+        ));
     }
     None
 }
