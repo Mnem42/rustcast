@@ -82,7 +82,7 @@ pub fn default_settings() -> Settings {
         blur: false,
         size: iced::Size {
             width: WINDOW_WIDTH,
-            height: DEFAULT_WINDOW_HEIGHT,
+            height: ((5 * 55) + 35 + DEFAULT_WINDOW_HEIGHT as usize) as f32,
         },
         ..Default::default()
     }

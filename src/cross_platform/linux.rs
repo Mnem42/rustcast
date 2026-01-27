@@ -3,7 +3,7 @@ use std::{fs, path::Path, process::Command, thread};
 use freedesktop_desktop_entry::DesktopEntry;
 use glob::glob;
 use iced::widget::image::Handle;
-use image::{EncodableLayout, ImageReader, RgbaImage};
+use image::{ImageReader, RgbaImage};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
@@ -16,7 +16,6 @@ use crate::{
 
 pub fn get_installed_linux_apps(config: &Config) -> Vec<App> {
     let paths = default_app_paths();
-    dbg!(&paths);
     let store_icons = config.theme.show_icons;
 
     let apps: Vec<App> = paths
@@ -84,10 +83,6 @@ fn get_installed_apps(path: &Path, store_icons: bool) -> Vec<App> {
         None
     };
 
-    if name.to_string().contains("Firefox") {
-        dbg!(&icon);
-    }
-
     apps.push(App {
         icons: icon,
         name: name.to_string(),
@@ -123,14 +118,7 @@ fn find_icon_handle(name: &str) -> Option<Handle> {
         }
         pattern.push_str(&format!("icons/**/{}*", name));
 
-        if name == "firefox" {
-            dbg!(&pattern);
-        }
-
         for entry in glob(&pattern).ok()?.flatten() {
-            if name == "firefox" {
-                dbg!(&pattern);
-            }
             if let Some(handle) = handle_from_png(&entry) {
                 return Some(handle);
             }
