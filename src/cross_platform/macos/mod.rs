@@ -7,7 +7,7 @@ use crate::{
     app::apps::{App, AppCommand},
     commands::Function,
     config::Config,
-    utils::{handle_from_icns, index_dirs_from_config},
+    utils::index_dirs_from_config,
 };
 
 use objc2_app_kit::NSWorkspace;
@@ -152,7 +152,7 @@ fn get_installed_apps(dir: impl AsRef<Path> + Sync + Send, store_icons: bool) ->
                 exit(-1)
             });
 
-            let icons = if store_icons {
+            let icon = if store_icons {
                 match fs::read_to_string(format!("{}/Contents/Info.plist", path_str)).map(
                     |content| {
                         let icon_line = content
@@ -227,7 +227,7 @@ fn get_installed_apps(dir: impl AsRef<Path> + Sync + Send, store_icons: bool) ->
             Some(App {
                 open_command: AppCommand::Function(Function::OpenApp(path_str)),
                 desc: "Application".to_string(),
-                icons,
+                icon,
                 name_lc: name.to_lowercase(),
                 name,
             })
@@ -281,6 +281,8 @@ pub fn open_settings() {
 /// Get an iced image handle from a .icns file
 pub fn handle_from_icns(path: impl AsRef<Path>) -> Option<iced::widget::image::Handle> {
     use image::RgbaImage;
+    use icns::IconFamily;
+    use iced::widget::image::Handle;
 
     let data = std::fs::read(path).ok()?;
     let family = IconFamily::read(std::io::Cursor::new(&data)).ok()?;
@@ -294,9 +296,9 @@ pub fn handle_from_icns(path: impl AsRef<Path>) -> Option<iced::widget::image::H
         icon.data().to_vec(),
     )?;
 
-    return Some(Handle::from_rgba(
+    Some(Handle::from_rgba(
         image.width(),
         image.height(),
         image.into_raw(),
-    ));
+    ))
 }

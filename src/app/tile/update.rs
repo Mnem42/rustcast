@@ -38,7 +38,7 @@ use crate::utils::is_valid_url;
 
 #[cfg(target_os = "macos")]
 use crate::cross_platform::macos::{
-    self, focus_this_app,
+    self,
     haptics::{HapticPattern, perform_haptic},
 };
 
@@ -118,7 +118,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 tile.results = vec![App {
                     open_command: AppCommand::Function(Function::RandomVar(rand_num)),
                     desc: "Easter egg".to_string(),
-                    icons: None,
+                    icon: None,
                     name: rand_num.to_string(),
                     name_lc: String::new(),
                 }];
@@ -133,7 +133,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 tile.results = vec![App {
                     open_command: AppCommand::Function(Function::RandomVar(67)),
                     desc: "Easter egg".to_string(),
-                    icons: None,
+                    icon: None,
                     name: 67.to_string(),
                     name_lc: String::new(),
                 }];
@@ -147,7 +147,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             } else if tile.query_lc.ends_with("?") {
                 tile.results = vec![App {
                     open_command: AppCommand::Function(Function::GoogleSearch(tile.query.clone())),
-                    icons: None,
+                    icon: None,
                     desc: "Web Search".to_string(),
                     name: format!("Search for: {}", tile.query),
                     name_lc: String::new(),
@@ -170,7 +170,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 tile.results.push(App {
                     open_command: AppCommand::Function(Function::Calculate(res.clone())),
                     desc: RUSTCAST_DESC_NAME.to_string(),
-                    icons: None,
+                    icon: None,
                     name: res.eval().map(|x| x.to_string()).unwrap_or("".to_string()),
                     name_lc: "".to_string(),
                 });
@@ -195,7 +195,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                                 ClipBoardContentType::Text(target.clone()),
                             )),
                             desc: source,
-                            icons: None,
+                            icon: None,
                             name: target,
                             name_lc: String::new(),
                         }
@@ -205,14 +205,14 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 tile.results.push(App {
                     open_command: AppCommand::Function(Function::OpenWebsite(tile.query.clone())),
                     desc: "Web Browsing".to_string(),
-                    icons: None,
+                    icon: None,
                     name: "Open Website: ".to_string() + &tile.query,
                     name_lc: "".to_string(),
                 });
             } else if tile.query_lc.split(' ').count() > 1 {
                 tile.results.push(App {
                     open_command: AppCommand::Function(Function::GoogleSearch(tile.query.clone())),
-                    icons: None,
+                    icon: None,
                     desc: "Web Search".to_string(),
                     name: format!("Search for: {}", tile.query),
                     name_lc: String::new(),
@@ -222,7 +222,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 tile.results.push(App {
                     open_command: AppCommand::Display,
                     desc: "Easter Egg".to_string(),
-                    icons: Some(Handle::from_path(Path::new(
+                    icon: Some(Handle::from_path(Path::new(
                         "/Applications/Rustcast.app/Contents/Resources/lemon.png",
                     ))),
                     name: "Lemon".to_string(),
@@ -239,7 +239,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                         Page::ClipboardHistory,
                     )),
                     desc: RUSTCAST_DESC_NAME.to_string(),
-                    icons: None,
+                    icon: None,
                     name: "Clipboard History".to_string(),
                     name_lc: "clipboard".to_string(),
                 }]

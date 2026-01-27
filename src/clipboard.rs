@@ -25,7 +25,7 @@ impl ClipBoardContentType {
                 self_clone.to_owned(),
             )),
             desc: "Clipboard Item".to_string(),
-            icons: None,
+            icon: None,
             name_lc: name.to_lowercase(),
             name,
         }

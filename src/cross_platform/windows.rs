@@ -69,7 +69,7 @@ fn get_apps_from_registry(apps: &mut Vec<App>) {
                     open_command: AppCommand::Function(Function::OpenApp(exe)),
                     name: display_name.clone().into_string().unwrap(),
                     name_lc: display_name.clone().into_string().unwrap().to_lowercase(),
-                    icons: None,
+                    icon: None,
                     desc: "Application".to_string(),
                 })
             }
@@ -104,7 +104,7 @@ fn get_apps_from_known_folder() -> impl ParallelIterator<Item = App> {
                     )),
                     name: name.clone(),
                     name_lc: name.to_lowercase(),
-                    icons: None,
+                    icon: None,
                     desc: "Application".to_string(),
                 }
             })

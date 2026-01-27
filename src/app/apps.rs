@@ -37,7 +37,7 @@ pub enum AppCommand {
 pub struct App {
     pub open_command: AppCommand,
     pub desc: String,
-    pub icons: Option<iced::widget::image::Handle>,
+    pub icon: Option<iced::widget::image::Handle>,
     pub name: String,
     pub name_lc: String,
 }
@@ -45,7 +45,7 @@ pub struct App {
 impl PartialEq for App {
     fn eq(&self, other: &Self) -> bool {
         self.name_lc == other.name_lc
-            && self.icons == other.icons
+            && self.icon == other.icon
             && self.desc == other.desc
             && self.name == other.name
     }
@@ -57,7 +57,7 @@ impl App {
         emojis::iter()
             .filter(|x| x.unicode_version() < emojis::UnicodeVersion::new(13, 0))
             .map(|x| App {
-                icons: None,
+                icon: None,
                 name: x.to_string(),
                 name_lc: x.name().to_string(),
                 open_command: AppCommand::Function(Function::CopyToClipboard(
@@ -71,8 +71,12 @@ impl App {
     pub fn basic_apps() -> Vec<App> {
         let app_version = option_env!("APP_VERSION").unwrap_or("Unknown Version");
 
+        #[cfg(target_os = "macos")]
+        use macos::handle_from_icns;
+
         #[cfg(not(target_os = "macos"))]
         fn handle_from_icns(_: &Path) -> Option<iced::widget::image::Handle> { None }
+        
         let icon = handle_from_icns(Path::new(
             "/Applications/Rustcast.app/Contents/Resources/icon.icns",
         ));
@@ -81,42 +85,42 @@ impl App {
             App {
                 open_command: AppCommand::Function(Function::Quit),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: icon.clone(),
+                icon: icon.clone(),
                 name: "Quit RustCast".to_string(),
                 name_lc: "quit".to_string(),
             },
             App {
                 open_command: AppCommand::Function(Function::OpenPrefPane),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: icon.clone(),
+                icon: icon.clone(),
                 name: "Open RustCast Preferences".to_string(),
                 name_lc: "settings".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::SwitchToPage(Page::EmojiSearch)),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: icon.clone(),
+                icon: icon.clone(),
                 name: "Search for an Emoji".to_string(),
                 name_lc: "emoji".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::SwitchToPage(Page::ClipboardHistory)),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: icon.clone(),
+                icon: icon.clone(),
                 name: "Clipboard History".to_string(),
                 name_lc: "clipboard".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::ReloadConfig),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: icon.clone(),
+                icon: icon.clone(),
                 name: "Reload RustCast".to_string(),
                 name_lc: "refresh".to_string(),
             },
             App {
                 open_command: AppCommand::Display,
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: icon.clone(),
+                icon: icon.clone(),
                 name: format!("Current RustCast Version: {app_version}"),
                 name_lc: "version".to_string(),
             },
@@ -125,7 +129,7 @@ impl App {
                     "/System/Library/CoreServices/Finder.app".to_string(),
                 )),
                 desc: "Application".to_string(),
-                icons: icon.clone(),
+                icon: icon.clone(),
                 name: "Finder".to_string(),
                 name_lc: "finder".to_string(),
             },
@@ -164,7 +168,7 @@ impl App {
             .height(50);
 
         if theme.show_icons
-            && let Some(icon) = &self.icons
+            && let Some(icon) = &self.icon
         {
             row = row.push(
                 container(Viewer::new(icon).height(40).width(40))

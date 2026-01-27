@@ -5,10 +5,6 @@ use std::{
     thread,
 };
 
-use iced::widget::image::Handle;
-#[cfg(target_os = "macos")]
-use icns::IconFamily;
-
 #[cfg(target_os = "macos")]
 use {
     crate::cross_platform::macos::get_installed_macos_apps, objc2_app_kit::NSWorkspace,
@@ -153,7 +149,7 @@ pub fn index_dirs_from_config(apps: &mut Vec<App>) -> bool {
                     name: display_name.clone(),
                     desc: "Application".to_string(),
                     name_lc: display_name.clone().to_lowercase(),
-                    icons: None,
+                    icon: None,
                 });
             }
         }
