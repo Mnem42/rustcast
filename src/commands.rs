@@ -59,7 +59,6 @@ impl Function {
                 let query = query.strip_suffix("?").unwrap_or(&query).to_string();
 
                 cross_platform::open_url(&query);
-                
 
                 #[cfg(target_os = "macos")]
                 NSWorkspace::new().openURL(
@@ -106,7 +105,6 @@ impl Function {
 
                 cross_platform::open_url(url);
             }
-
 
             Function::Calculate(expr) => {
                 Clipboard::new()

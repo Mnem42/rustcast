@@ -183,5 +183,5 @@ pub fn open_url(url: &str) {
             .args(["-Command", &format!("Start-Process {}", url)])
             .status()
             .ok();
-        });
+    });
 }

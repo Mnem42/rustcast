@@ -61,8 +61,7 @@ pub(crate) fn handle_from_icns(path: &Path) -> Option<Handle> {
 
     let img = ImageReader::open(path).ok()?.decode().ok()?.to_rgb8();
 
-    Some(Handle::from_rgba(
-            img.width(), img.height(), img.into_raw()))
+    Some(Handle::from_rgba(img.width(), img.height(), img.into_raw()))
 }
 
 pub fn get_config_installation_dir() -> PathBuf {
@@ -117,6 +116,7 @@ pub fn create_config_file_if_not_exists(
     Ok(())
 }
 
+// TODO: this should also work with args
 pub fn open_application(path: &str) {
     let path_string = path.to_string();
     thread::spawn(move || {
@@ -140,7 +140,7 @@ pub fn open_application(path: &str) {
 
         #[cfg(target_os = "linux")]
         {
-            Command::new("xdg-open").arg(path).status().ok();
+            Command::new(path).status().ok();
         }
     });
 }

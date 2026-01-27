@@ -81,9 +81,9 @@ pub fn new(hotkey: HotKey, config: &Config) -> (Tile, Task<Message>) {
     let open: Task<iced::window::Id> = open.discard();
 
     #[cfg(target_os = "linux")]
-    let open = open.discard().chain(window::run(id, |_| {
-        Message::OpenWindow
-    }));
+    let open = open
+        .discard()
+        .chain(window::run(id, |_| Message::OpenWindow));
 
     #[cfg(target_os = "macos")]
     let open = open.discard().chain(window::run(id, |handle| {
