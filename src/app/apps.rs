@@ -13,9 +13,11 @@ use crate::{
     app::{Message, Page, RUSTCAST_DESC_NAME},
     clipboard::ClipBoardContentType,
     commands::Function,
-    styles::{result_button_style, result_row_container_style},
-    utils::handle_from_icns,
+    styles::{result_button_style, result_row_container_style}
 };
+
+#[cfg(target_os = "macos")]
+use crate::cross_platform::macos;
 
 /// This tells each "App" what to do when it is clicked, whether it is a function, a message, or a display
 #[allow(dead_code)]
@@ -69,58 +71,52 @@ impl App {
     pub fn basic_apps() -> Vec<App> {
         let app_version = option_env!("APP_VERSION").unwrap_or("Unknown Version");
 
+        #[cfg(not(target_os = "macos"))]
+        fn handle_from_icns(_: &Path) -> Option<iced::widget::image::Handle> { None }
+        let icon = handle_from_icns(Path::new(
+            "/Applications/Rustcast.app/Contents/Resources/icon.icns",
+        ));
+
         vec![
             App {
                 open_command: AppCommand::Function(Function::Quit),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: handle_from_icns(Path::new(
-                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
-                )),
+                icons: icon.clone(),
                 name: "Quit RustCast".to_string(),
                 name_lc: "quit".to_string(),
             },
             App {
                 open_command: AppCommand::Function(Function::OpenPrefPane),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: handle_from_icns(Path::new(
-                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
-                )),
+                icons: icon.clone(),
                 name: "Open RustCast Preferences".to_string(),
                 name_lc: "settings".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::SwitchToPage(Page::EmojiSearch)),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: handle_from_icns(Path::new(
-                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
-                )),
+                icons: icon.clone(),
                 name: "Search for an Emoji".to_string(),
                 name_lc: "emoji".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::SwitchToPage(Page::ClipboardHistory)),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: handle_from_icns(Path::new(
-                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
-                )),
+                icons: icon.clone(),
                 name: "Clipboard History".to_string(),
                 name_lc: "clipboard".to_string(),
             },
             App {
                 open_command: AppCommand::Message(Message::ReloadConfig),
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: handle_from_icns(Path::new(
-                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
-                )),
+                icons: icon.clone(),
                 name: "Reload RustCast".to_string(),
                 name_lc: "refresh".to_string(),
             },
             App {
                 open_command: AppCommand::Display,
                 desc: RUSTCAST_DESC_NAME.to_string(),
-                icons: handle_from_icns(Path::new(
-                    "/Applications/Rustcast.app/Contents/Resources/icon.icns",
-                )),
+                icons: icon.clone(),
                 name: format!("Current RustCast Version: {app_version}"),
                 name_lc: "version".to_string(),
             },
@@ -129,9 +125,7 @@ impl App {
                     "/System/Library/CoreServices/Finder.app".to_string(),
                 )),
                 desc: "Application".to_string(),
-                icons: handle_from_icns(Path::new(
-                    "/System/Library/CoreServices/Finder.app/Contents/Resources/Finder.icns",
-                )),
+                icons: icon.clone(),
                 name: "Finder".to_string(),
                 name_lc: "finder".to_string(),
             },
