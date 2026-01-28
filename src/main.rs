@@ -23,6 +23,8 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 
+const SOCKET_PATH: &str = "/tmp/rustcast.sock";
+
 fn main() -> iced::Result {
     #[cfg(target_os = "macos")]
     cross_platform::macos::set_activation_policy_accessory();
@@ -65,9 +67,24 @@ fn main() -> iced::Result {
 
     #[cfg(target_os = "linux")]
     {
-        // TODO: check a unix socket to determite if you are the master
-        // if so launch the app normally
-        // if not send a message to toggle the hidden state of the main app
+        // error handling should really be improved soon (tm)
+        use std::fs;
+        use std::{io::Write, os::unix::net::UnixStream};
+        use tokio::net::UnixListener;
+        use tracing::info;
+
+        if UnixListener::bind(SOCKET_PATH).is_err() {
+            match UnixStream::connect(SOCKET_PATH) {
+                Ok(mut stream) => {
+                    info!("toggling via socket");
+                    let _ = stream.write_all(b"toggle");
+                    std::process::exit(0);
+                }
+                Err(_) => {
+                    let _ = fs::remove_file(SOCKET_PATH);
+                }
+            }
+        }
     }
 
     #[cfg(not(target_os = "linux"))]

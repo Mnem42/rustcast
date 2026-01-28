@@ -156,6 +156,8 @@ impl Tile {
         Subscription::batch([
             #[cfg(not(target_os = "linux"))]
             Subscription::run(handle_hotkeys),
+            #[cfg(target_os = "linux")]
+            Subscription::run(handle_socket),
             keyboard,
             Subscription::run(handle_recipient),
             Subscription::run(handle_hot_reloading),
@@ -342,6 +344,31 @@ fn handle_hotkeys() -> impl futures::Stream<Item = Message> {
                 output.try_send(Message::HotkeyPressed(event.id)).unwrap();
             }
             tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+}
+
+#[cfg(target_os = "linux")]
+fn handle_socket() -> impl futures::Stream<Item = Message> {
+    stream::channel(100, async |output| {
+        use tokio::net::UnixListener;
+
+        let _ = fs::remove_file(crate::SOCKET_PATH);
+        let listener = UnixListener::bind(crate::SOCKET_PATH).unwrap();
+
+        while let Ok((mut stream, _address)) = listener.accept().await {
+            let mut output = output.clone();
+            tokio::spawn(async move {
+                use tokio::io::AsyncReadExt;
+                use tracing::info;
+
+                let mut s = String::new();
+                let _ = stream.read_to_string(&mut s).await;
+                info!("received socket command {s}");
+                if s.trim() == "toggle" {
+                    output.try_send(Message::OpenMain).unwrap();
+                }
+            });
         }
     })
 }

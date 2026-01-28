@@ -309,13 +309,8 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
         }
 
         Message::ReturnFocus => {
-            #[cfg(target_os = "linux")]
-            std::process::exit(0);
-            #[cfg(not(target_os = "linux"))]
-            {
-                tile.restore_frontmost();
-                Task::none()
-            }
+            tile.restore_frontmost();
+            Task::none()
         }
 
         Message::FocusTextInput(update_query_char) => {
