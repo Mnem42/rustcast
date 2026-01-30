@@ -16,9 +16,7 @@ use crate::{
     cross_platform::open_settings,
 };
 
-const DISCORD_URL: &str = "https://discord.gg/bDfNYPbnC5";
-
-/// This create a new menubar icon for the app
+/// This creates a new menubar icon for the app
 pub fn menu_icon(hotkey: HotKey, sender: ExtSender) -> TrayIcon {
     let builder = TrayIconBuilder::new();
 
@@ -105,11 +103,6 @@ fn init_event_handler(sender: ExtSender, hotkey_id: u32) {
                         .try_send(Message::KeyPressed(hotkey_id))
                         .unwrap();
                 });
-            }
-            "open_discord" => {
-                if let Err(e) = open::that(DISCORD_URL) {
-                    tracing::error!("Error opening url: {}", e)
-                }
             }
             "open_help_page" => {
                 if let Err(e) = open::that(

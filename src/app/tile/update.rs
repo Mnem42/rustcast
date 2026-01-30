@@ -186,7 +186,6 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 Ok(a) => a,
                 Err(_) => return Task::none(),
             };
-
             let mut options = Vec::new();
 
             match index_installed_apps(&new_config) {
