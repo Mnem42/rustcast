@@ -41,14 +41,14 @@ pub fn rustcast_text_input_style(
     }
 }
 
-pub fn contents_style(_theme: &ConfigTheme) -> container::Style {
+pub fn contents_style(theme: &ConfigTheme) -> container::Style {
     container::Style {
-        background: Some(iced::Background::Color(Color::TRANSPARENT)),
+        background: None,
         text_color: None,
         border: iced::Border {
-            color: Color::TRANSPARENT,
+            color: theme.text_color(0.7),
             width: 0.,
-            radius: Radius::new(0),
+            radius: Radius::new(14.0),
         },
         ..Default::default()
     }

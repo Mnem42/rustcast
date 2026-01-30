@@ -206,33 +206,9 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             Task::none()
         }
 
-        Message::OpenClipboard => {
+        Message::OpenToPage(page) => {
             if !tile.visible {
-                return Task::batch([
-                    open_window(),
-                    Task::done(Message::SwitchToPage(Page::ClipboardHistory)),
-                ]);
-            }
-
-            tile.visible = !tile.visible;
-
-            let clear_search_query = if tile.config.buffer_rules.clear_on_hide {
-                Task::done(Message::ClearSearchQuery)
-            } else {
-                Task::none()
-            };
-
-            let to_close = window::latest().map(|x| x.unwrap());
-            Task::batch([
-                to_close.map(Message::HideWindow),
-                clear_search_query,
-                Task::done(Message::ReturnFocus),
-            ])
-        }
-
-        Message::OpenMain => {
-            if !tile.visible {
-                return Task::batch([open_window(), Task::done(Message::SwitchToPage(Page::Main))]);
+                return Task::batch([open_window(), Task::done(Message::SwitchToPage(page))]);
             }
 
             tile.visible = !tile.visible;
@@ -264,9 +240,9 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             let is_open_hotkey = hk_id == tile.hotkey.id;
 
             if is_clipboard_hotkey {
-                handle_update(tile, Message::OpenClipboard)
+                handle_update(tile, Message::OpenToPage(Page::ClipboardHistory))
             } else if is_open_hotkey {
-                handle_update(tile, Message::OpenMain)
+                handle_update(tile, Message::OpenToPage(Page::Main))
             } else {
                 Task::none()
             }

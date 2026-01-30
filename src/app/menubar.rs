@@ -12,7 +12,7 @@ use tray_icon::{
 };
 
 use crate::{
-    app::{Message, tile::ExtSender},
+    app::{Message, Page, tile::ExtSender},
     cross_platform::{open_settings, open_url},
 };
 
@@ -102,7 +102,10 @@ fn init_event_handler(sender: ExtSender) {
             }
             "show_rustcast" => {
                 runtime.spawn(async move {
-                    sender.clone().try_send(Message::OpenWindow).unwrap();
+                    sender
+                        .clone()
+                        .try_send(Message::OpenToPage(Page::Main))
+                        .unwrap();
                 });
             }
             "open_discord" => {

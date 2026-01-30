@@ -353,7 +353,9 @@ fn handle_socket() -> impl futures::Stream<Item = Message> {
     stream::channel(100, async |mut output| {
         let clipboard = env::args().any(|arg| arg.trim() == "--cphist");
         if clipboard {
-            output.try_send(Message::OpenClipboard).unwrap();
+            output
+                .try_send(Message::OpenToPage(Page::ClipboardHistory))
+                .unwrap();
         }
 
         use std::env;
@@ -373,9 +375,11 @@ fn handle_socket() -> impl futures::Stream<Item = Message> {
                 let _ = stream.read_to_string(&mut s).await;
                 info!("received socket command {s}");
                 if s.trim() == "toggle" {
-                    output.try_send(Message::OpenMain).unwrap();
+                    output.try_send(Message::OpenToPage(Page::Main)).unwrap();
                 } else if s.trim() == "clipboard" {
-                    output.try_send(Message::OpenClipboard).unwrap();
+                    output
+                        .try_send(Message::OpenToPage(Page::ClipboardHistory))
+                        .unwrap();
                 }
             });
         }

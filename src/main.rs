@@ -23,6 +23,7 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 
+#[cfg(target_os = "linux")]
 const SOCKET_PATH: &str = "/tmp/rustcast.sock";
 
 fn main() -> iced::Result {
