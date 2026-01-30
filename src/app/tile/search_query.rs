@@ -2,7 +2,7 @@ use iced::{
     Task,
     window::{self, Id},
 };
-use std::{cmp, path::Path};
+use std::cmp;
 
 use super::Tile;
 use crate::{
@@ -146,15 +146,19 @@ pub(super) fn handle_change(tile: &mut Tile, input: &str, id: Id) -> iced::Task<
         });
     } else if tile.results.is_empty() && tile.query_lc == "lemon" {
         #[cfg(target_os = "macos")]
-        tile.results.push(App {
-            open_command: AppCommand::Display,
-            desc: "Easter Egg".to_string(),
-            icons: Some(iced::widget::image::Handle::from_path(Path::new(
-                "/Applications/Rustcast.app/Contents/Resources/lemon.png",
-            ))),
-            name: "Lemon".to_string(),
-            name_lc: "".to_string(),
-        });
+        {
+            use std::path::Path;
+            
+            tile.results.push(App {
+                open_command: AppCommand::Display,
+                desc: "Easter Egg".to_string(),
+                icons: Some(iced::widget::image::Handle::from_path(Path::new(
+                    "/Applications/Rustcast.app/Contents/Resources/lemon.png",
+                ))),
+                name: "Lemon".to_string(),
+                name_lc: "".to_string(),
+            });
+        }
     }
     if !tile.query_lc.is_empty() && tile.page == Page::EmojiSearch {
         tile.results = tile
