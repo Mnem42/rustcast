@@ -24,7 +24,6 @@ macro_rules! static_geticon_imghandle {
     }
 }
 
-const IMG_50:  &[u8] = include_bytes!("../assets/icon/icon50.png");
 const IMG_64:  &[u8] = include_bytes!("../assets/icon/icon64.png");
 const IMG_128: &[u8] = include_bytes!("../assets/icon/icon128.png");
 const IMG_256: &[u8] = include_bytes!("../assets/icon/icon256.png");
@@ -33,7 +32,6 @@ const IMG_512: &[u8] = include_bytes!("../assets/icon/icon512.png");
 pub mod iced_icon {
     use super::*;
 
-    static_geticon!(icon_50,  IMG_50,  50 );
     static_geticon!(icon_64,  IMG_64,  64 );
     static_geticon!(icon_128, IMG_128, 128);
     static_geticon!(icon_256, IMG_256, 256);
@@ -43,7 +41,6 @@ pub mod iced_icon {
 pub mod iced_img_handle {
     use super::*;
     
-    static_geticon_imghandle!(icon_50,  IMG_50);
     static_geticon_imghandle!(icon_64,  IMG_64 );
     static_geticon_imghandle!(icon_128, IMG_128);
     static_geticon_imghandle!(icon_256, IMG_256);

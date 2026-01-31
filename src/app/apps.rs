@@ -159,9 +159,9 @@ impl App {
             && let Some(icon) = &self.icons
         {
             row = row.push(
-                container(Viewer::new(icon).height(50).width(50))
-                    .width(50)
-                    .height(50),
+                container(Viewer::new(icon).height(40).width(40))
+                    .width(40)
+                    .height(40),
             );
         }
         row = row.push(container(text_block).width(Fill));
