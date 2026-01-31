@@ -19,6 +19,8 @@ use windows::{
     core::PCWSTR,
 };
 
+use crate::utils::bgra_to_rgba;
+
 /// Gets the icons from an executable.
 ///
 /// Adapted from an answer to https://stackoverflow.com/questions/7819024
@@ -171,5 +173,6 @@ fn get_icon_bitmap(icon_info: ICONINFOEXW) -> Result<(BITMAPINFO, Vec<u8>), wind
         DeleteObject(icon_info.hbmMask).ok()?;
     }
 
+    bgra_to_rgba(buffer.as_mut_slice());
     Ok((bmp_info, buffer))
 }

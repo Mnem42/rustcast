@@ -2,7 +2,7 @@ use {
     crate::{
         app::apps::{App, AppCommand},
         commands::Function,
-        cross_platform::windows::{extract_appicons::get_first_icon, get_acp},
+        cross_platform::windows::{appicon::get_first_icon, get_acp},
     },
     std::path::PathBuf,
     walkdir::WalkDir,
