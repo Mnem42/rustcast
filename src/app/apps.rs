@@ -161,9 +161,14 @@ impl App {
             const IMG_SIZE: u32 = 32;
 
             row = row.push(
-                container(Viewer::new(icon).scale_step(0.).height(IMG_SIZE).width(IMG_SIZE))
-                    .width(IMG_SIZE)
-                    .height(IMG_SIZE),
+                container(
+                    Viewer::new(icon)
+                        .scale_step(0.)
+                        .height(IMG_SIZE)
+                        .width(IMG_SIZE),
+                )
+                .width(IMG_SIZE)
+                .height(IMG_SIZE),
             );
         }
         row = row.push(container(text_block).width(Fill));
