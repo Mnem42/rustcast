@@ -4,7 +4,7 @@ use {
         commands::Function,
         cross_platform::windows::get_acp,
     },
-    std::{ffi::OsStr, path::PathBuf},
+    std::path::PathBuf,
     walkdir::WalkDir,
     windows::{
         Win32::{
