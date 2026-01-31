@@ -158,10 +158,12 @@ impl App {
         if theme.show_icons
             && let Some(icon) = &self.icons
         {
+            const IMG_SIZE: u32 = 32;
+
             row = row.push(
-                container(Viewer::new(icon).height(40).width(40))
-                    .width(40)
-                    .height(40),
+                container(Viewer::new(icon).height(IMG_SIZE).width(IMG_SIZE))
+                    .width(IMG_SIZE)
+                    .height(IMG_SIZE),
             );
         }
         row = row.push(container(text_block).width(Fill));
