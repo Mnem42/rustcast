@@ -10,7 +10,7 @@ mod utils;
 mod cross_platform;
 
 use std::env::temp_dir;
-use std::fs::{File, create_dir};
+use std::fs::{File, create_dir_all};
 use std::io;
 
 // import from utils
@@ -31,9 +31,10 @@ fn main() -> iced::Result {
     #[cfg(target_os = "macos")]
     cross_platform::macos::set_activation_policy_accessory();
 
+    let config_dir = get_config_installation_dir();
     if let Err(e) = std::fs::metadata(get_config_installation_dir().join("rustcast/")) {
         if e.kind() == io::ErrorKind::NotFound {
-            let result = create_dir(get_config_installation_dir().join("rustcast/"));
+            let result = create_dir_all(get_config_installation_dir().join("rustcast/"));
 
             if let Err(e) = result {
                 eprintln!("{}", e);
@@ -56,8 +57,12 @@ fn main() -> iced::Result {
     let config = config.unwrap();
 
     {
-        let log_path = temp_dir().join("rustcast/log.log");
-        let vv_log_path = temp_dir().join("rustcast/vv_log.log");
+        let temp_dir = temp_dir();
+        let log_path = temp_dir.join("rustcast/log.log");
+        let vv_log_path = temp_dir.join("rustcast/vv_log.log");
+        if !temp_dir.is_dir() {
+            std::fs::create_dir_all(temp_dir.join("rustcast")).unwrap();
+        }
 
         let file = File::create(&log_path).expect("Failed to create logfile");
         let vv_file = File::create(&vv_log_path).expect("Failed to create logfile");

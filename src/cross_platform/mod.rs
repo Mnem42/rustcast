@@ -19,6 +19,10 @@ pub fn open_settings() {
 
 /// Gets an iced image handle
 pub fn get_img_handle(path: &Path) -> Option<iced::widget::image::Handle> {
+    if !path.exists() {
+        return None
+    }
+
     #[cfg(target_os = "macos")]
     return macos::handle_from_icns(path);
 
