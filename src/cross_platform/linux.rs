@@ -1,4 +1,4 @@
-use std::{fs, path::Path, process::Command, thread};
+use std::{fs, path::Path};
 
 use freedesktop_desktop_entry::DesktopEntry;
 use glob::glob;

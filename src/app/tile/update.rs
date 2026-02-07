@@ -46,11 +46,16 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
         Message::SetSender(sender) => {
             tile.sender = Some(sender.clone());
             if tile.config.show_trayicon {
-                tile.tray_icon = Some(menu_icon(
-                    #[cfg(not(target_os = "linux"))]
-                    tile.hotkey,
-                    sender,
-                ));
+                // Tray icon seems to not work on linux (gdk only but this is wgpu?)
+                // I do not know so much abt rendering stuff
+                #[cfg(not(target_os = "linux"))]
+                {
+                    tile.tray_icon = Some(menu_icon(
+                        #[cfg(not(target_os = "linux"))]
+                        tile.hotkey,
+                        sender,
+                    ));
+                }
             }
             Task::none()
         }

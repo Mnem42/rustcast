@@ -206,8 +206,34 @@ pub fn index_installed_apps(config: &Config) -> anyhow::Result<Vec<App>> {
 
     #[cfg(target_os = "linux")]
     {
-        // TODO: look into what got changed here
-        Ok(get_installed_linux_apps(&config))
+        let start = Instant::now();
+
+        let other_apps = get_installed_linux_apps(&config);
+
+        let start2 = Instant::now();
+
+        let res = config
+            .index_dirs
+            .par_iter()
+            .flat_map(|x| {
+                search_dir(
+                    &x.path,
+                    &config.index_exclude_patterns,
+                    &config.index_include_patterns,
+                    x.max_depth,
+                )
+            })
+            .chain(other_apps.into_par_iter())
+            .collect();
+
+        let end = Instant::now();
+        tracing::info!(
+            "Finished indexing apps (t = {}s) (t2 = {}s)",
+            (end - start).as_secs_f32(),
+            (end - start2).as_secs_f32(),
+        );
+
+        Ok(res)
     }
 }
 
