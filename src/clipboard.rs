@@ -1,7 +1,10 @@
 //! This has all the logic regarding the cliboard history
 use arboard::ImageData;
 
-use crate::{app::apps::{App, AppCommand}, commands::Function};
+use crate::{
+    app::apps::{App, AppCommand},
+    commands::Function,
+};
 
 /// The kinds of clipboard content that rustcast can handle and their contents
 #[derive(Debug, Clone)]
@@ -29,9 +32,7 @@ impl ClipBoardContentType {
             &name,
             &name_lc,
             "Clipboard Item",
-            AppCommand::Function(Function::CopyToClipboard(
-                self_clone.to_owned(),
-            )),
+            AppCommand::Function(Function::CopyToClipboard(self_clone.to_owned())),
         )
     }
 }

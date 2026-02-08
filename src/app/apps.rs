@@ -1,7 +1,10 @@
 //! This modules handles the logic for each "app" that rustcast can load
 //!
 //! An "app" is effectively, one of the results that rustcast returns when you search for something
-use std::{path::{Path, PathBuf}, sync::atomic::{AtomicUsize, Ordering}};
+use std::{
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use iced::{
     Alignment,
@@ -43,7 +46,7 @@ pub enum AppData {
         icon: Option<iced::widget::image::Handle>,
     },
     Builtin {
-        command: AppCommand
+        command: AppCommand,
     },
 }
 
@@ -54,7 +57,7 @@ pub struct App {
     pub desc: String,
     pub app_data: AppData,
 
-    id: usize
+    id: usize,
 }
 
 impl PartialEq for App {
@@ -66,42 +69,52 @@ impl PartialEq for App {
 impl App {
     pub fn new(name: &str, name_lc: &str, desc: &str, data: AppData) -> Self {
         static ID: AtomicUsize = AtomicUsize::new(0);
-        
+
         Self {
             name_lc: name_lc.to_string(),
             name: name.to_string(),
             desc: desc.to_string(),
             id: ID.fetch_add(1, Ordering::Relaxed),
-            app_data: data
+            app_data: data,
         }
     }
 
-    pub fn new_builtin(name: &str, name_lc: &str, desc: &str, command: AppCommand) -> Self{
+    pub fn new_builtin(name: &str, name_lc: &str, desc: &str, command: AppCommand) -> Self {
         Self::new(name, name_lc, desc, AppData::Builtin { command })
     }
 
     pub fn new_executable(
-        name: &str, 
+        name: &str,
         name_lc: &str,
         desc: &str,
         path: impl AsRef<Path>,
-        icon: Option<widget::image::Handle>
+        icon: Option<widget::image::Handle>,
     ) -> Self {
-        Self::new(name, name_lc, desc, AppData::Executable { path: path.as_ref().to_path_buf(), icon })
+        Self::new(
+            name,
+            name_lc,
+            desc,
+            AppData::Executable {
+                path: path.as_ref().to_path_buf(),
+                icon,
+            },
+        )
     }
 
     /// A vec of all the emojis as App structs
     pub fn emoji_apps() -> Vec<App> {
         emojis::iter()
             .filter(|x| x.unicode_version() < emojis::UnicodeVersion::new(17, 13))
-            .map(|x| App::new_builtin(
-                x.name(),
-                x.name(),
-                "emoji",
-                AppCommand::Function(Function::CopyToClipboard(
-                    ClipBoardContentType::Text(x.to_string()),
-                ))
-            ))
+            .map(|x| {
+                App::new_builtin(
+                    x.name(),
+                    x.name(),
+                    "emoji",
+                    AppCommand::Function(Function::CopyToClipboard(ClipBoardContentType::Text(
+                        x.to_string(),
+                    ))),
+                )
+            })
             .collect()
     }
     /// This returns the basic apps that rustcast has, such as quiting rustcast and opening preferences
@@ -113,7 +126,7 @@ impl App {
                 "Quit RustCast",
                 "quit",
                 RUSTCAST_DESC_NAME,
-                AppCommand::Function(Function::Quit)
+                AppCommand::Function(Function::Quit),
             ),
             Self::new_builtin(
                 "Open RustCast Preferences",
@@ -190,17 +203,22 @@ impl App {
             .spacing(10)
             .height(50);
 
-        if theme.show_icons
-        {
+        if theme.show_icons {
             match self.app_data {
-                AppData::Command { icon: Some(ref icon), .. } |
-                AppData::Executable { icon: Some(ref icon), ..} => {
+                AppData::Command {
+                    icon: Some(ref icon),
+                    ..
+                }
+                | AppData::Executable {
+                    icon: Some(ref icon),
+                    ..
+                } => {
                     row = row.push(
                         container(Viewer::new(icon).height(40).width(40))
                             .width(40)
                             .height(40),
                     );
-                },
+                }
                 AppData::Builtin { .. } => {
                     let icon = get_img_handle(Path::new(
                         "/Applications/Rustcast.app/Contents/Resources/icon.icns",
@@ -219,13 +237,24 @@ impl App {
         row = row.push(container(text_block).width(Fill));
 
         let msg = match self.app_data {
-            AppData::Builtin { command: AppCommand::Function(func), .. } => Some(Message::RunFunction(func)),
-            AppData::Builtin { command: AppCommand::Message(msg), .. } => Some(msg),
-            AppData::Builtin { command: AppCommand::Display, .. } =>  None,
-            AppData::Executable { path, .. } => 
-                Some(Message::RunFunction(Function::OpenApp(path.to_string_lossy().to_string()))),
-            AppData::Command { command, alias, .. } => 
-                Some(Message::RunFunction(Function::RunShellCommand(command, alias))),
+            AppData::Builtin {
+                command: AppCommand::Function(func),
+                ..
+            } => Some(Message::RunFunction(func)),
+            AppData::Builtin {
+                command: AppCommand::Message(msg),
+                ..
+            } => Some(msg),
+            AppData::Builtin {
+                command: AppCommand::Display,
+                ..
+            } => None,
+            AppData::Executable { path, .. } => Some(Message::RunFunction(Function::OpenApp(
+                path.to_string_lossy().to_string(),
+            ))),
+            AppData::Command { command, alias, .. } => Some(Message::RunFunction(
+                Function::RunShellCommand(command, alias),
+            )),
         };
 
         let theme_clone = theme.clone();

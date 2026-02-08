@@ -118,9 +118,9 @@ pub(super) fn handle_change(tile: &mut Tile, input: &str, id: Id) -> iced::Task<
                     &source,
                     &target,
                     "Copy to clipboard",
-                    AppCommand::Function(Function::CopyToClipboard(
-                        ClipBoardContentType::Text(target.clone()),
-                    ))
+                    AppCommand::Function(Function::CopyToClipboard(ClipBoardContentType::Text(
+                        target.clone(),
+                    ))),
                 )
             })
             .collect();
@@ -129,14 +129,14 @@ pub(super) fn handle_change(tile: &mut Tile, input: &str, id: Id) -> iced::Task<
             "Web Browsing",
             "",
             &format!("Open website: {}", tile.query),
-            AppCommand::Function(Function::OpenWebsite(tile.query.clone()))
+            AppCommand::Function(Function::OpenWebsite(tile.query.clone())),
         ));
     } else if tile.query_lc.split(' ').count() > 1 {
         tile.results.push(App::new_builtin(
             &format!("Search for: {}", tile.query),
             "",
             "Web Search",
-            AppCommand::Function(Function::GoogleSearch(tile.query.clone()))
+            AppCommand::Function(Function::GoogleSearch(tile.query.clone())),
         ));
     } else if tile.results.is_empty() && tile.query_lc == "lemon" {
         #[cfg(target_os = "macos")]

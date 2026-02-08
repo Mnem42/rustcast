@@ -7,8 +7,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(target_os = "windows")]
 use crate::cross_platform::windows::app_finding::get_known_paths;
 use crate::{
-    app::apps::{App, AppCommand, AppData},
-    commands::Function,
+    app::apps::{App, AppData},
     cross_platform::get_img_handle,
 };
 
@@ -214,7 +213,7 @@ impl Shelly {
                 alias: self_clone.alias_lc.clone(),
                 command: self_clone.command,
                 icon: icon.flatten(),
-            }
+            },
         )
     }
 }

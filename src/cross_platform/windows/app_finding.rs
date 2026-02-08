@@ -1,9 +1,5 @@
 use {
-    crate::{
-        app::apps::{App, AppCommand},
-        commands::Function,
-        cross_platform::windows::get_acp,
-    },
+    crate::{app::apps::App, cross_platform::windows::get_acp},
     std::path::PathBuf,
     walkdir::WalkDir,
     windows::{
@@ -55,12 +51,8 @@ pub fn get_apps_from_registry(apps: &mut Vec<App>) {
             }
             // if there is something, it will be in the form of
             // "C:\Program Files\Microsoft Office\Office16\WINWORD.EXE",0
-            let exe_string = exe_path
-                .to_string_lossy();
-            let exe_string = exe_string
-                .split(",")
-                .next()
-                .unwrap();
+            let exe_string = exe_path.to_string_lossy();
+            let exe_string = exe_string.split(",").next().unwrap();
 
             // make sure it ends with .exe
             if !exe_string.ends_with(".exe") {

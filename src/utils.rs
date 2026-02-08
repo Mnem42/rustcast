@@ -47,7 +47,6 @@ fn search_dir(
     include_patterns: &[glob::Pattern],
     max_depth: usize,
 ) -> impl ParallelIterator<Item = App> {
-    use crate::{app::apps::AppCommand, commands::Function};
     use walkdir::WalkDir;
 
     WalkDir::new(path.as_ref())
@@ -80,7 +79,7 @@ fn search_dir(
                 &name.to_lowercase(),
                 "Application",
                 path,
-                None
+                None,
             ))
         })
 }
