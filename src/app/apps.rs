@@ -250,7 +250,7 @@ impl App {
                 ..
             } => None,
             AppData::Executable { path, .. } => Some(Message::RunFunction(Function::OpenApp(
-                path.to_string_lossy().to_string(),
+                path
             ))),
             AppData::Command { command, alias, .. } => Some(Message::RunFunction(
                 Function::RunShellCommand(command, alias),

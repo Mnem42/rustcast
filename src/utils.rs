@@ -102,32 +102,30 @@ pub fn read_config_file(file_path: &Path) -> anyhow::Result<Config> {
 }
 
 // TODO: this should also work with args
-pub fn open_application(path: &str) {
-    let path_string = path.to_string();
-    thread::spawn(move || {
-        let path = &path_string;
-        #[cfg(target_os = "windows")]
-        {
-            println!("Opening application: {}", path);
+pub fn open_application(path: impl AsRef<Path>) {
+    let path = path.as_ref();
 
-            Command::new("powershell")
-                .arg(format!("Start-Process '{}'", path))
-                .status()
-                .ok();
-        }
+    #[cfg(target_os = "windows")]
+    {
+        println!("Opening application: {}", path.display());
 
-        #[cfg(target_os = "macos")]
-        {
-            NSWorkspace::new().openURL(&NSURL::fileURLWithPath(
-                &objc2_foundation::NSString::from_str(path),
-            ));
-        }
+        Command::new("powershell")
+            .arg(format!("Start-Process '{}'", path.display()))
+            .status()
+            .ok();
+    }
 
-        #[cfg(target_os = "linux")]
-        {
-            Command::new(path).status().ok();
-        }
-    });
+    #[cfg(target_os = "macos")]
+    {
+        NSWorkspace::new().openURL(&NSURL::fileURLWithPath(
+            &objc2_foundation::NSString::from_str(path),
+        ));
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new(path).status().ok();
+    }
 }
 
 pub fn index_installed_apps(config: &Config) -> anyhow::Result<Vec<App>> {
