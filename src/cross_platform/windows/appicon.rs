@@ -39,7 +39,7 @@ pub fn get_first_icon(path: impl AsRef<Path>) -> anyhow::Result<Option<widget::i
 
     // Don't bother doing the rest
     if icon_count == 0 {
-        return Ok(None)
+        return Ok(None);
     }
 
     let mut large_icons = vec![HICON::default(); icon_count as usize];
@@ -60,17 +60,13 @@ pub fn get_first_icon(path: impl AsRef<Path>) -> anyhow::Result<Option<widget::i
         path.display()
     );
 
-    let hicon = large_icons
-        .iter()
-        .chain(small_icons.iter())
-        .next();
+    let hicon = large_icons.iter().chain(small_icons.iter()).next();
 
     if let Some(hicon) = hicon {
         let res = hicon_to_imghandle(*hicon);
-        unsafe { DestroyIcon(*hicon) }?;   
+        unsafe { DestroyIcon(*hicon) }?;
         Ok(Some(res?)) // Error only gets propogated down here, so that hicon is always destroyed
-    } 
-    else { 
+    } else {
         Ok(None)
     }
 }
@@ -141,7 +137,7 @@ fn get_icon_bitmap(icon_info: ICONINFOEXW) -> Result<(BITMAPINFO, Vec<u8>), wind
     };
 
     // It's just stored here because it should still go through to the cleanup code
-    let val = if gdib_result == 0 { 
+    let val = if gdib_result == 0 {
         Err(windows::core::Error::from_win32())
     } else {
         bgra_to_rgba(buffer.as_mut_slice());
