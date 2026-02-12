@@ -111,13 +111,13 @@ pub fn new(
     let options = index_installed_apps(config);
 
     if let Err(ref e) = options {
-        tracing::error!("Error indexing apps: {e}")
+        tracing::error!("Error indexing apps: {e}");
     }
 
     // Still try to load the rest
     let mut options = options.unwrap_or_default();
 
-    options.extend(config.shells.iter().map(|x| x.to_app()));
+    options.extend(config.shells.iter().map(crate::config::Shelly::to_app));
     options.extend(App::basic_apps());
     options.par_sort_by_key(|x| x.name.len());
     let options = AppIndex::from_apps(options);
@@ -133,7 +133,7 @@ pub fn new(
             visible: true,
             focused: false,
             config: config.clone(),
-            theme: config.theme.to_owned().into(),
+            theme: config.theme.clone().into(),
             clipboard_content: vec![],
             tray_icon: None,
             sender: None,
@@ -204,7 +204,7 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
                 tile.config.theme.clone(),
                 tile.emoji_apps
                     .search_prefix(&tile.query_lc)
-                    .map(|x| x.to_owned())
+                    .map(std::borrow::ToOwned::to_owned)
                     .collect(),
                 tile.focus_id,
             )
@@ -274,7 +274,7 @@ fn footer(theme: Theme, results_count: usize) -> Element<'static, Message> {
     } else if results_count == 1 {
         "1 result found"
     } else {
-        &format!("{} results found", results_count)
+        &format!("{results_count} results found")
     };
 
     container(

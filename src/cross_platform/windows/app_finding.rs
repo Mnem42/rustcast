@@ -18,7 +18,7 @@ use {
 /// `SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall`. `apps` has the relvant items
 /// appended to it.
 ///
-/// Based on https://stackoverflow.com/questions/2864984
+/// Based on <https://stackoverflow.com/questions/2864984>
 pub fn get_apps_from_registry(apps: &mut Vec<App>) {
     use std::ffi::OsString;
     let hkey = winreg::RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
@@ -52,7 +52,7 @@ pub fn get_apps_from_registry(apps: &mut Vec<App>) {
             // if there is something, it will be in the form of
             // "C:\Program Files\Microsoft Office\Office16\WINWORD.EXE",0
             let exe_string = exe_path.to_string_lossy();
-            let exe_string = exe_string.split(",").next().unwrap();
+            let exe_string = exe_string.split(',').next().unwrap();
 
             // make sure it ends with .exe
             if !exe_string.ends_with(".exe") {
@@ -66,7 +66,7 @@ pub fn get_apps_from_registry(apps: &mut Vec<App>) {
                     "Application",
                     exe_path,
                     None,
-                ))
+                ));
             }
         });
     });
@@ -90,7 +90,7 @@ fn get_windows_path(folder_id: &GUID) -> Option<PathBuf> {
         let folder = SHGetKnownFolderPath(folder_id, KF_FLAG_DEFAULT, None);
         if let Ok(folder) = folder {
             let path = folder.to_string().ok()?;
-            CoTaskMemFree(Some(folder.0 as *mut _));
+            CoTaskMemFree(Some(folder.0.cast()));
             Some(path.into())
         } else {
             None
@@ -101,7 +101,7 @@ fn get_windows_path(folder_id: &GUID) -> Option<PathBuf> {
 pub fn index_start_menu() -> Vec<App> {
     WalkDir::new(r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs")
         .into_iter()
-        .filter_map(|x| x.ok())
+        .filter_map(std::result::Result::ok)
         .filter_map(|path| {
             let lnk = lnk::ShellLink::open(path.path(), get_acp());
 
@@ -110,21 +110,18 @@ pub fn index_start_menu() -> Vec<App> {
                     let target = x.link_target();
                     let file_name = path.file_name().to_string_lossy().to_string();
 
-                    match target {
-                        Some(target) => Some(App::new_executable(
-                            &file_name,
-                            &file_name,
-                            "",
-                            PathBuf::from(target.clone()),
-                            None,
-                        )),
-                        None => {
-                            tracing::debug!(
-                                "Link at {} has no target, skipped",
-                                path.path().display()
-                            );
-                            None
-                        }
+                    if let Some(target) = target { Some(App::new_executable(
+                        &file_name,
+                        &file_name,
+                        "",
+                        PathBuf::from(target.clone()),
+                        None,
+                    )) } else {
+                        tracing::debug!(
+                            "Link at {} has no target, skipped",
+                            path.path().display()
+                        );
+                        None
                     }
                 }
                 Err(e) => {

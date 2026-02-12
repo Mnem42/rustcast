@@ -97,7 +97,7 @@ fn init_event_handler(sender: ExtSender) {
             }
             "open_issue_page" => {
                 if let Err(e) = open::that("https://github.com/unsecretised/rustcast/issues/new") {
-                    tracing::error!("Error opening url: {}", e)
+                    tracing::error!("Error opening url: {}", e);
                 }
             }
             "show_rustcast" => {
@@ -112,7 +112,7 @@ fn init_event_handler(sender: ExtSender) {
                 if let Err(e) = open::that(
                     "https://github.com/unsecretised/rustcast/discussions/new?category=q-a",
                 ) {
-                    tracing::error!("Error opening url: {}", e)
+                    tracing::error!("Error opening url: {}", e);
                 }
             }
             "open_preferences" => {
@@ -120,7 +120,7 @@ fn init_event_handler(sender: ExtSender) {
             }
             "open_github_page" => {
                 if let Err(e) = open::that("https://github.com/unsecretised/rustcast") {
-                    tracing::error!("Error opening url: {}", e)
+                    tracing::error!("Error opening url: {}", e);
                 }
             }
             _ => {}

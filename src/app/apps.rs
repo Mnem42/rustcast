@@ -306,7 +306,7 @@ impl App {
             .height(50);
 
         container(content)
-            .id(format!("result-{}", id_num))
+            .id(format!("result-{id_num}"))
             .style(move |_| result_row_container_style(&theme, focused))
             .padding(8)
             .width(Fill)

@@ -174,10 +174,10 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
         Message::ReloadConfig => {
             let new_config: Config = match toml::from_str(
                 &fs::read_to_string(
-                    std::env::var("HOME").unwrap_or("".to_owned())
+                    std::env::var("HOME").unwrap_or_default()
                         + "/.config/rustcast/config.toml",
                 )
-                .unwrap_or("".to_owned()),
+                .unwrap_or_default(),
             ) {
                 Ok(a) => a,
                 Err(_) => return Task::none(),
@@ -189,11 +189,11 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
                 Err(e) => tracing::error!("Error indexing apps: {e}"),
             }
 
-            options.extend(new_config.shells.iter().map(|x| x.to_app()));
+            options.extend(new_config.shells.iter().map(crate::config::Shelly::to_app));
             options.extend(App::basic_apps());
             options.par_sort_by_key(|x| x.name.len());
 
-            tile.theme = new_config.theme.to_owned().into();
+            tile.theme = new_config.theme.clone().into();
             tile.config = new_config;
             tile.options = AppIndex::from_apps(options);
             Task::none()
@@ -227,8 +227,7 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
             // Linux Clipboard and Open Hotkey are gonna be handled via a socket
             let is_clipboard_hotkey = tile
                 .clipboard_hotkey
-                .map(|hotkey| hotkey.id == hk_id)
-                .unwrap_or(false);
+                .is_some_and(|hotkey| hotkey.id == hk_id);
 
             let is_open_hotkey = hk_id == tile.hotkey.id;
 
@@ -309,15 +308,13 @@ pub fn handle_update(tile: &mut Tile, message: Message) -> Task<Message> {
 
         Message::WindowFocusChanged(wid, focused) => {
             tile.focused = focused;
-            if !focused {
-                if cfg!(target_os = "macos") {
-                    Task::done(Message::HideWindow(wid))
-                        .chain(Task::done(Message::ClearSearchQuery))
-                } else {
-                    // linux seems to not wanna unfocus it on start making it not show
-                    Task::none()
-                }
+            if focused {
+                Task::none()
+            } else if cfg!(target_os = "macos") {
+                Task::done(Message::HideWindow(wid))
+                    .chain(Task::done(Message::ClearSearchQuery))
             } else {
+                // linux seems to not wanna unfocus it on start making it not show
                 Task::none()
             }
         }

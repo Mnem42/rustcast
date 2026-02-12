@@ -53,45 +53,44 @@ pub(super) fn handle_change(tile: &mut Tile, input: &str, id: Id) -> iced::Task<
                 height: 55. + DEFAULT_WINDOW_HEIGHT,
             },
         );
-    } else {
-        if tile.query_lc == "67" {
-            tile.results = vec![App::new_builtin(
-                "67",
-                "",
-                "Easter egg",
-                AppCommand::Function(Function::RandomVar(67)),
-            )];
-            return window::resize(
-                id,
-                iced::Size {
-                    width: WINDOW_WIDTH,
-                    height: 55. + DEFAULT_WINDOW_HEIGHT,
-                },
-            );
-        }
-        if tile.query_lc.ends_with("?") {
-            tile.results = vec![App::new_builtin(
-                &format!("Search for: {}", tile.query),
-                "",
-                "Web Search",
-                AppCommand::Function(Function::GoogleSearch(tile.query.clone())),
-            )];
-            return window::resize(
-                id,
-                iced::Size::new(WINDOW_WIDTH, 55. + DEFAULT_WINDOW_HEIGHT),
-            );
-        } else if tile.query_lc == "cbhist" {
-            tile.page = Page::ClipboardHistory
-        } else if tile.query_lc == "main" {
-            tile.page = Page::Main
-        }
+    }
+    if tile.query_lc == "67" {
+        tile.results = vec![App::new_builtin(
+            "67",
+            "",
+            "Easter egg",
+            AppCommand::Function(Function::RandomVar(67)),
+        )];
+        return window::resize(
+            id,
+            iced::Size {
+                width: WINDOW_WIDTH,
+                height: 55. + DEFAULT_WINDOW_HEIGHT,
+            },
+        );
+    }
+    if tile.query_lc.ends_with('?') {
+        tile.results = vec![App::new_builtin(
+            &format!("Search for: {}", tile.query),
+            "",
+            "Web Search",
+            AppCommand::Function(Function::GoogleSearch(tile.query.clone())),
+        )];
+        return window::resize(
+            id,
+            iced::Size::new(WINDOW_WIDTH, 55. + DEFAULT_WINDOW_HEIGHT),
+        );
+    } else if tile.query_lc == "cbhist" {
+        tile.page = Page::ClipboardHistory;
+    } else if tile.query_lc == "main" {
+        tile.page = Page::Main;
     }
     tile.handle_search_query_changed();
 
     if tile.results.is_empty()
         && let Some(res) = Expr::from_str(&tile.query).ok()
     {
-        let res_string = res.eval().map(|x| x.to_string()).unwrap_or(String::new());
+        let res_string = res.eval().map_or(String::new(), |x| x.to_string());
         tile.results.push(App::new_builtin(
             RUSTCAST_DESC_NAME,
             &res_string,
@@ -155,7 +154,7 @@ pub(super) fn handle_change(tile: &mut Tile, input: &str, id: Id) -> iced::Task<
         tile.results = tile
             .emoji_apps
             .search_prefix("")
-            .map(|x| x.to_owned())
+            .map(std::borrow::ToOwned::to_owned)
             .collect();
     }
 

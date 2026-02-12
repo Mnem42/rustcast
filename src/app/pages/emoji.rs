@@ -9,7 +9,7 @@ pub fn emoji_page(
 ) -> Element<'static, Message> {
     let emoji_vec = emojis
         .chunks(6)
-        .map(|x| x.to_vec())
+        .map(<[crate::app::apps::App]>::to_vec)
         .collect::<Vec<Vec<App>>>();
 
     let mut column = Vec::new();
@@ -43,7 +43,7 @@ pub fn emoji_page(
                 )
                 .width(70)
                 .height(70)
-                .id(format!("result-{}", id_num))
+                .id(format!("result-{id_num}"))
                 .style(move |_| emoji_button_container_style(&theme_clone, focussed_id == id_num)),
                 container(
                     Text::new(emoji.desc)

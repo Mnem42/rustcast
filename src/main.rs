@@ -37,11 +37,11 @@ fn main() -> iced::Result {
             let result = create_dir_all(config_dir.join("rustcast/"));
 
             if let Err(e) = result {
-                eprintln!("{}", e);
+                eprintln!("{e}");
                 std::process::exit(1);
             }
         } else {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             std::process::exit(1);
         }
     }
@@ -50,7 +50,7 @@ fn main() -> iced::Result {
     let config = read_config_file(&file_path);
     if let Err(e) = config {
         // Tracing isn't inited yet
-        eprintln!("Error parsing config: {}", e);
+        eprintln!("Error parsing config: {e}");
         std::process::exit(1);
     }
 
@@ -135,9 +135,9 @@ fn main() -> iced::Result {
         if let Err(global_hotkey::Error::AlreadyRegistered(key)) = result {
             if key == show_hide {
                 // It probably should give up here.
-                panic!("Couldn't register the key to open ({})", key)
+                panic!("Couldn't register the key to open ({key})")
             } else {
-                tracing::warn!("Couldn't register hotkey {}", key)
+                tracing::warn!("Couldn't register hotkey {}", key);
             }
         } else if let Err(e) = result {
             tracing::error!("{}", e.to_string());

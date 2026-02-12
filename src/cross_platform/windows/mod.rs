@@ -16,9 +16,9 @@ pub fn open_on_focused_monitor() -> iced::Point {
         ..Default::default()
     };
 
-    let _cursor = unsafe { GetCursorPos(&mut point) };
+    let _cursor = unsafe { GetCursorPos(&raw mut point) };
     let monitor = unsafe { MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST) };
-    let _monitor_infos = unsafe { GetMonitorInfoW(monitor, &mut monitor_info) };
+    let _monitor_infos = unsafe { GetMonitorInfoW(monitor, &raw mut monitor_info) };
 
     let monitor_width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
     let monitor_height = monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top;
@@ -31,7 +31,7 @@ pub fn open_on_focused_monitor() -> iced::Point {
     iced::Point { x, y }
 }
 
-/// Wrapper over GetACP that defaults to WINDOWS_1252 if the ACP isn't found
+/// Wrapper over `GetACP` that defaults to `WINDOWS_1252` if the ACP isn't found
 pub fn get_acp() -> Encoding {
     unsafe { codepage::to_encoding(GetACP() as u16) }.unwrap_or_else(|| {
         tracing::warn!(

@@ -31,7 +31,7 @@ pub fn clipboard_view(
                 clipboard_content
                     .get(focussed_id as usize)
                     .map(|x| x.to_app().alias)
-                    .unwrap_or("".to_string()),
+                    .unwrap_or_default(),
             )
             .height(385)
             .width(Length::Fill)

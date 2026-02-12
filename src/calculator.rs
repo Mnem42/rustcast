@@ -49,8 +49,8 @@ pub enum BinOp {
 
 impl Expr {
     pub fn eval(&self) -> Option<f64> {
-        use BinOp::*;
-        use UnaryOp::*;
+        use BinOp::{Add, Sub, Mul, Div, Pow};
+        use UnaryOp::{Plus, Minus};
         match self {
             Expr::Number(x) => Some(*x),
 
@@ -196,9 +196,8 @@ impl<'a> Lexer<'a> {
                     return self.lex_number();
                 } else if c.is_ascii_alphabetic() || c == '_' {
                     return self.lex_ident();
-                } else {
-                    return Err(format!("Unexpected character: {c}"));
                 }
+                return Err(format!("Unexpected character: {c}"));
             }
         };
         Ok(tok)
