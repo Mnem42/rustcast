@@ -86,9 +86,6 @@ pub struct App {
     pub app_data: AppData,
 
     /// A unique ID generated for each instance of an App.
-    ///
-    /// This is made by atomically incrementing a counter every time a new instance of the struct
-    /// is made. The implementation of [`PartialEq`] uses this.
     id: usize,
 }
 
@@ -99,7 +96,7 @@ impl PartialEq for App {
 }
 
 impl App {
-    /// Get the internal id
+    /// Get the numeric id of an app
     pub fn id(&self) -> usize {
         self.id
     }
