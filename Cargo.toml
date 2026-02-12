@@ -3,13 +3,6 @@ name = "rustcast"
 version = "0.5.2"
 edition = "2024"
 
-[lints.clippy]
-# NOTE: set "annoying" lints that aren't of note to allowed as they appear
-pedantic = { level = "warn", priority = -1 }
-cast_precision_loss = "allow"
-cast_sign_loss = "allow"
-
-
 [lints.rustdoc]
 missing_docs = "warn"
 
