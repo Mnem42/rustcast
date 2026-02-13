@@ -35,7 +35,9 @@ pub fn get_apps_from_registry(apps: &mut Vec<App>) {
         .flat_map(|reg| reg.enum_keys().zip(std::iter::repeat(reg)))
     {
         // Not debug only just because it doesn't run too often
-        tracing::trace!(
+        tracing::trace!("App added [reg]: {:?}", key);
+            // Not debug only just because it doesn't run too often
+            tracing::trace!(
                 target: "reg_app_search",
                 "App added: {:?}",
                 key
@@ -117,6 +119,11 @@ pub fn index_start_menu() -> Vec<App> {
                     let file_name = path.file_name().to_string_lossy().to_string();
 
                     if let Some(target) = target {
+                        tracing::trace!(
+                            target: "smenu_app_search",
+                            "Link at {} added",
+                            path.path().display()
+                        );
                         Some(App::new_executable(
                             &file_name,
                             &file_name,
@@ -125,31 +132,12 @@ pub fn index_start_menu() -> Vec<App> {
                             None,
                         ))
                     } else {
-                        tracing::debug!("Link at {} has no target, skipped", path.path().display());
+                        tracing::trace!(
+                            target: "smenu_app_search",
+                            "Link at {} has no target, skipped",
+                            path.path().display()
+                        );
                         None
-                    match target {
-                        Some(target) => {
-                            tracing::trace!(
-                                target: "smenu_app_search",
-                                "Link at {} added",
-                                path.path().display()
-                            );
-                            Some(App::new_executable(
-                                &file_name,
-                                &file_name,
-                                "",
-                                PathBuf::from(target.clone()),
-                                None,
-                            ))
-                        },
-                        None => {
-                            tracing::trace!(
-                                target: "smenu_app_search",
-                                "Link at {} has no target, skipped",
-                                path.path().display()
-                            );
-                            None
-                        }
                     }
                 }
                 Err(e) => {
