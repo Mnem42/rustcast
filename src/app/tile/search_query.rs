@@ -141,8 +141,6 @@ pub(super) fn handle_change(tile: &mut Tile, input: &str, id: Id) -> iced::Task<
     } else if tile.results.is_empty() && tile.query_lc == "lemon" {
         #[cfg(target_os = "macos")]
         {
-            
-
             tile.results.push(App::new_builtin(
                 "Easter Egg",
                 "Lemon",

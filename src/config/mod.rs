@@ -4,7 +4,7 @@ use std::{path::PathBuf, sync::Arc};
 use iced::{Font, font::Family, theme::Custom};
 use serde::{Deserialize, Serialize};
 
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 use crate::app_finding::get_known_paths;
 
 use crate::{

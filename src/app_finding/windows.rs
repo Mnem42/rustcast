@@ -30,7 +30,10 @@ pub fn get_apps_from_registry(apps: &mut Vec<App>) {
             .unwrap(),
     ];
 
-    for (key, reg) in registers.iter().flat_map(|reg| reg.enum_keys().zip(repeat(reg))) {
+    for (key, reg) in registers
+        .iter()
+        .flat_map(|reg| reg.enum_keys().zip(repeat(reg)))
+    {
         // Not debug only just because it doesn't run too often
         tracing::trace!("App added [reg]: {:?}", key);
 
@@ -96,17 +99,16 @@ pub fn index_start_menu() -> Vec<App> {
                     let target = x.link_target();
                     let file_name = path.file_name().to_string_lossy().to_string();
 
-                    if let Some(target) = target { Some(App::new_executable(
-                        &file_name,
-                        &file_name,
-                        "",
-                        PathBuf::from(target.clone()),
-                        None,
-                    )) } else {
-                        tracing::debug!(
-                            "Link at {} has no target, skipped",
-                            path.path().display()
-                        );
+                    if let Some(target) = target {
+                        Some(App::new_executable(
+                            &file_name,
+                            &file_name,
+                            "",
+                            PathBuf::from(target.clone()),
+                            None,
+                        ))
+                    } else {
+                        tracing::debug!("Link at {} has no target, skipped", path.path().display());
                         None
                     }
                 }

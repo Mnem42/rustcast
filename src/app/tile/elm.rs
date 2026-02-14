@@ -17,9 +17,9 @@ use crate::app::WINDOW_WIDTH;
 use crate::app::pages::clipboard::clipboard_view;
 use crate::app::pages::emoji::emoji_page;
 use crate::app::tile::AppIndex;
+use crate::app_finding::index_installed_apps;
 use crate::config::Theme;
 use crate::styles::{contents_style, rustcast_text_input_style, tint, with_alpha};
-use crate::app_finding::index_installed_apps;
 use crate::{
     app::{Message, Page, apps::App, default_settings, tile::Tile},
     config::Config,
@@ -75,7 +75,7 @@ pub fn new(
     config: &Config,
 ) -> (Tile, Task<Message>) {
     tracing::trace!(target: "elm_init", "Initing ELM");
-    
+
     #[allow(unused_mut)]
     let mut settings = default_settings();
 
@@ -90,7 +90,7 @@ pub fn new(
     }
 
     tracing::trace!(target: "elm_init", "Opening window");
-    
+
     // id unused on windows, but not macos
     #[allow(unused)]
     let (id, open) = window::open(settings);
