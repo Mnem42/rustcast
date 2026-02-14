@@ -56,6 +56,7 @@ pub fn get_first_icon(path: impl AsRef<Path>) -> anyhow::Result<Option<widget::i
     };
 
     tracing::trace!(
+        target: "icon_fetch",
         "{icons_fetched}/{icon_count} icons fetched for {}",
         path.display()
     );
