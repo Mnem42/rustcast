@@ -2,6 +2,7 @@ use lnk::{Encoding, encoding::WINDOWS_1252};
 use windows::Win32::{Globalization::GetACP, UI::WindowsAndMessaging::GetCursorPos};
 
 pub mod app_finding;
+pub mod appicon;
 
 #[allow(clippy::cast_precision_loss)]
 pub fn open_on_focused_monitor() -> iced::Point {
